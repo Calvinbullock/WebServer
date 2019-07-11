@@ -37,6 +37,8 @@ string creatRow(string path, string unK);
 -- ------------- in a coment EX = Exspanation or do not remove ------------- --
 ** -------------------------------- ------- -------------------------------- */
 
+// testing changes
+
 // TODO deal with dSE
 // TODO find a better func name
 // EX puts every file in a vetor with the date it was added
