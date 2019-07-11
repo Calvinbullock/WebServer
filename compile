@@ -1,0 +1,1 @@
+clang++ -Wall -Werror -Wshadow -pthread http.cc server.cc main.cc -lstdc++fs -o server
