@@ -22,9 +22,6 @@ const std::string HTML_HEAD = R"RAW(<!DOCTYPE html>
       a:hover {
         color: #ffff4d;
       }
-      #one {
-        color: #ff0000;
-      }
     </style>
     </head>
 
@@ -33,7 +30,6 @@ const std::string HTML_HEAD = R"RAW(<!DOCTYPE html>
       </div>
       <p>
         <h2><a href="/">Movie Index</a></h2>
-        <a id="one" href="/recent">Recently Added</a><br>
         <table style="width:30%">
           <tr>
             <th>Icon</th>
@@ -49,6 +45,18 @@ const std::string HTML_HEAD = R"RAW(<!DOCTYPE html>
           </tr>)RAW";
 
 const std::string HTML_TAIL = R"RAW(<tr>
+            <th colspan="5">
+              <hr>
+            </th>
+          </tr>
+          <tr>
+            <th><img src="/WebServer/assets/folder_icon_edit.png/" alt="[DNE]" width="20"></th>
+             <th><a id="one" href="/recent">Recently_Added</a><br></th>
+            <th>--</th>
+            <th>--</th>
+            <th>--</th>
+          </tr>
+          <tr>
             <th colspan="5">
               <hr>
             </th>

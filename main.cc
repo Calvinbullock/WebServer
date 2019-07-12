@@ -122,6 +122,8 @@ string htmlFormat(string tableRows) {
   return HTML_HEAD + tableRows + HTML_TAIL;
 }
 
+// TODO finish this work in progress
+// TODO will convert bytes to GB or MB
 string byteConversion(int bytes) {
   if (bytes > 1000000) {
     bytes = bytes / 1000000;
@@ -132,8 +134,6 @@ string byteConversion(int bytes) {
 
 // TODO add byts conversion for fileSize
 // TODO needs the last time a file was accsesed
-// TODO remove timeA exspresion after dealing with timeB
-// TODO strftime insted of asctime
 // EX returns the elements of a table row
 string creatRow(string path, string unK) {
   // EX this method is called only from getFiledirectery
@@ -142,9 +142,6 @@ string creatRow(string path, string unK) {
   auto ftime = fs::last_write_time(p);
   // assuming system_clock
   std::time_t cftime = decltype(ftime)::clock::to_time_t(ftime);
-  string timeA = asctime(std::localtime(&cftime));
-
-  // TODO finish this stuff
   char timeB[80];
   strftime(timeB, 80, "%b/%d/%y", std::localtime(&cftime));
   row[1] = "<th><a href = \"" + unK + "/\">" + unK + "</a></th>";
@@ -152,14 +149,14 @@ string creatRow(string path, string unK) {
   if (fs::is_directory(path + unK)) {
     row[0] =
         R"(<th><img src="/WebServer/assets/folder_icon_edit.png/" alt="[DNE]" width="20"></th>)";
-    row[2] = "<th>null</th>";
-    row[3] = "<th>null</th>";
-    row[4] = "<th>null</th>";
+    row[2] = "<th>--</th>";
+    row[3] = "<th>--</th>";
+    row[4] = "<th>--</th>";
   } else {
     row[0] =
         R"(<th><img src="/WebServer/assets/file_icon_edit.png/" alt="[DNE]" width="20"></th>)";
     row[2] = "<th>" + to_string(fs::file_size(p)) + "</th>";
-    row[3] = "<th>" + timeA + "</th>";
+    row[3] = "<th>" + string(timeB) + "</th>";
     row[4] = "<th>time2</th>";
   }
   return row[0] + row[1] + row[2] + row[3] + row[4];
