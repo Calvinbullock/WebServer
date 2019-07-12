@@ -37,45 +37,43 @@ string creatRow(string path, string unK);
 -- ------------- in a coment EX = Exspanation or do not remove ------------- --
 ** -------------------------------- ------- -------------------------------- */
 
-// Fin TODO deal with dSE
 // TODO find a better func name
 // EX puts every file in a vetor with the date it was added
-vector<FileSort> everyFileVec(string path) {
-  vector<FileSort> everyFile;
-  path = homeFilePath + path;
+void everyFileVec(string path, vector<FileSort> *everyFile) {
+  path += "/";
   DIR *dir;
   struct dirent *ent;
   // EX checks if directery is open
   if ((dir = opendir(path.c_str())) == NULL) {
     perror("");
-    return everyFile;
   }
 
+  cout << "new dir: -----" << path << endl; // DeBug remove
   /* EX adds all the files and directories within directory to everyFile*/
-  int i = 0;
   while ((ent = readdir(dir)) != NULL) {
-    string unK = string(ent->d_name); // what is this
+    string unK = string(ent->d_name); // what is this again?
     fs::path p = path + unK;
     auto dSE = fs::last_write_time(p).time_since_epoch();
-    printf("%s\n", ent->d_name);
+    // printf("%s\n", ent->d_name);
 
     if (fs::is_directory(path + unK)) {
-      everyFileVec(path + unK);
+      // EX "if" checks for the "." ".." so it dose not infa loop
+      if ((unK != ".") && (unK != "..")) {
+        // cout << "unK = " << unK << endl; // DeBug remove
+        everyFileVec(path + unK, everyFile);
+      }
     } else {
-      // TODO remove creatRow and just add block of code
-      everyFile.push_back(
+      everyFile->push_back(
           FileSort(dSE.count(), "<tr>" + creatRow(path, unK) + "</tr>"));
     }
-    i++;
   }
   closedir(dir);
-  return everyFile;
 }
 
-// Fin TODO sort bases on date
 // EX returns the html table for oldest and newest files
-string everyFileSort(string path, int numOFRows) {
-  vector<FileSort> everyFile = everyFileVec(path);
+string everyFileSort(string path, int numOfRows) {
+  vector<FileSort> everyFile;
+  everyFileVec(path, &everyFile);
   string html;
 
   sort(everyFile.begin(), everyFile.end(),
@@ -83,10 +81,15 @@ string everyFileSort(string path, int numOFRows) {
          return a.getDate() < b.getDate();
        });
   // concatinats the chosen into a string
-  for (int i = 0; i < everyFile.size(); i++) {
-    html = "<table>" + everyFile[i].getRow() + "</table>";
+  // for (int i = 0; i < everyFile.size(); i++) {
+  html = "<table>";
+  for (int i = 0; i < numOfRows; i++) {
+    html += everyFile[i].getRow();
+    // cout << everyFile[i].getRow() << endl; // DeBug remove
   }
-  return html;
+
+  return html + "</table>";
+  ;
 }
 
 // EX sorts the vector indexes that hold the rows & formats for HTML table
@@ -159,9 +162,8 @@ string htmlFormat(string tableRows) {
       <div>
       </div>
       <p>
-        <h2>Movie Index</h2>
-        The "stop" will turn off the site.
-        <a id="one" href="/stop">STOP</a><br>
+        <h2><a href="/">Movie Index</a></h2>
+        <a id="one" href="/recent">Recently Added</a><br>
         <table style="width:30%">
           <tr>
             <th>Icon</th>
@@ -338,7 +340,7 @@ void handle(const TcpConnection &conn) {
     exit(1);
   }
   if (req.request_uri_ == "/recent") {
-    resp.SetHtmlContent(htmlFormat("List of Recent files"));
+    resp.SetHtmlContent(htmlFormat(everyFileSort(homeFilePath, 5)));
   }
   serveIndexHtml(req, &resp);
 
@@ -349,5 +351,5 @@ void handle(const TcpConnection &conn) {
 int main() {
   TcpServer server(handle);
   server.Run(8000, 4);
-  // cout << webContentSort("/home/calvin") << endl;
+  // cout << everyFileSort("/home/calvin/Desktop/Code", 5) << endl;
 }
