@@ -28,8 +28,14 @@ namespace fs = std::experimental::filesystem;
 using namespace obsequi;
 using namespace std;
 
-// const string homeFilePath = "/var/www/html";
+#if 0 // EX Running as production
+const string homeFilePath = "/var/www/html";
+const int port = 8080;
+#else // EX Running as development
 const string homeFilePath = "/home/calvin/Desktop/Code";
+const int port = 8001;
+#endif
+
 vector<string> getFileDirectory(string path);
 string creatRow(string path, string unK);
 
@@ -55,12 +61,11 @@ void everyFileVec(string path, vector<FileSort> *everyFile) {
     string unK = string(ent->d_name); // what is this again?
     fs::path p = path + unK;
     auto dSE = fs::last_write_time(p).time_since_epoch();
-    // printf("%s\n", ent->d_name);
+    printf("%s\n", ent->d_name);
 
     if (fs::is_directory(path + unK)) {
       // EX "if" checks for the "." ".." so it dose not infa loop
       if ((unK != ".") && (unK != "..")) {
-        // cout << "unK = " << unK << endl; // DeBug remove
         everyFileVec(path + unK, everyFile);
       }
     } else {
@@ -81,12 +86,9 @@ string everyFileSort(string path, int numOfRows) {
        [](const FileSort &a, const FileSort &b) {
          return a.getDate() < b.getDate();
        });
-  // concatinats the chosen into a string
-  // for (int i = 0; i < everyFile.size(); i++) {
   html = "<table>";
   for (int i = 0; i < numOfRows; i++) {
     html += everyFile[i].getRow();
-    // cout << everyFile[i].getRow() << endl; // DeBug remove
   }
 
   return html + "</table>";
@@ -104,9 +106,7 @@ string webContentSort(string path) {
     if (webContent[i].find("./") != std::string::npos ||
         webContent[i].find("..") != std::string::npos) {
       webContent[i].erase(i);
-      // cout << ". = " << i << ", " << webContent[i] << endl;
     } else {
-      // cout << "path = " << i << ", " << webContent[i] << endl;
       webContentF = webContentF + webContent[i];
     }
   }
@@ -143,13 +143,13 @@ string creatRow(string path, string unK) {
 
   if (fs::is_directory(path + unK)) {
     row[0] =
-        R"(<th><img src="/Web/assets/folder_icon.jpg/" alt="[DNE]" width="20"></th>)";
+        R"(<th><img src="/WebServer/assets/folder_icon.jpg/" alt="[DNE]" width="20"></th>)";
     row[2] = "<th>null</th>";
     row[3] = "<th>null</th>";
     row[4] = "<th>null</th>";
   } else {
     row[0] =
-        R"(<th><img src="/Web/assets/file_icon.png/" alt="[DNE]" width="20"></th>)";
+        R"(<th><img src="/WebServer/assets/file_icon.png/" alt="[DNE]" width="20"></th>)";
     row[2] = "<th>" + to_string(fs::file_size(p)) + "</th>";
     row[3] = "<th>" + timeA + "</th>";
     row[4] = "<th>time2</th>";
@@ -205,12 +205,10 @@ string getFile(string path) {
   return data;
 }
 
-// EX ?
+// EX serves the files
 void serveFile(const HttpRequest &req, HttpResponse *resp, const string &type) {
   string path = homeFilePath + req.request_uri_;
   path = path.substr(0, path.size() - 1);
-
-  cout << "serveFile path = " << path << endl;
 
   int fd = open(path.c_str(), 0);
   if (fd == -1) {
@@ -220,11 +218,8 @@ void serveFile(const HttpRequest &req, HttpResponse *resp, const string &type) {
   int file_size = lseek(fd, 0, SEEK_END);
   int err = lseek(fd, 0, SEEK_SET);
 
-  // kj char buf[100];
-  // int bufx = read(fd, buf, 10);
-  // buf[10] = '\0';
-  //
-  cout << file_size << ": " << err << ": " << endl; // << bufx << buf << endl;
+  // EX debug for lseek
+  cout << file_size << ": " << err << ": " << endl;
 
   resp->SetContent(type, fd, file_size);
 }
@@ -245,35 +240,31 @@ string getMimeType(string path) {
   return "text/plain";
 }
 
-// TODO add recent files function
 // EX The function we want to make the thread run.
 void handle(const TcpConnection &conn) {
   HttpRequest req = HttpRequest::parse(conn.fd);
   HttpResponse resp;
 
   cout << "## " << req.method_ << " " << req.request_uri_ << endl;
-  // req.Print();
-  // cout << req.content_ << endl;
   if (req.request_uri_ == "/stop") {
     exit(1);
   }
   if (req.request_uri_ == "/recent") {
     resp.SetHtmlContent(htmlFormat(everyFileSort(homeFilePath, 5)));
-  }
-
-  string path = homeFilePath + req.request_uri_;
-  if (fs::is_directory(path)) {
-    resp.SetHtmlContent(htmlFormat(webContentSort(req.request_uri_)));
   } else {
-    serveFile(req, &resp, getMimeType(path));
+    string path = homeFilePath + req.request_uri_;
+    if (fs::is_directory(path)) {
+      resp.SetHtmlContent(htmlFormat(webContentSort(req.request_uri_)));
+    } else {
+      serveFile(req, &resp, getMimeType(path));
+    }
   }
 
   resp.Send(conn.fd);
 }
 
-// -- MAIN --
 int main() {
   TcpServer server(handle);
-  server.Run(8000, 4);
-  // cout << everyFileSort("/home/calvin/Desktop/Code", 5) << endl;
+  server.Run(port, 4);
+  // cout << everyFileSort("/home/calvin/Desktop/Code", 5) << endl; // debug
 }
