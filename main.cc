@@ -122,17 +122,19 @@ string htmlFormat(string tableRows) {
   return HTML_HEAD + tableRows + HTML_TAIL;
 }
 
-// TODO finish this work in progress
-// TODO will convert bytes to GB or MB
-string byteConversion(int bytes) {
-  if (bytes > 1000000) {
-    bytes = bytes / 1000000;
-    return to_string(bytes) + "MB";
+// converts bytes to needed unit
+string byteConversion(long long int size) {
+  int unit = 0;
+  string units[] = {"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
+
+  while (size >= 1024) {
+    size /= 1024;
+    ++unit;
   }
-  return "";
+  // cout << "befor:" << size << endl;
+  return to_string((int)size) + " " + units[unit];
 }
 
-// TODO add byts conversion for fileSize
 // TODO needs the last time a file was accsesed
 // EX returns the elements of a table row
 string creatRow(string path, string unK) {
@@ -155,7 +157,7 @@ string creatRow(string path, string unK) {
   } else {
     row[0] =
         R"(<th><img src="/WebServer/assets/file_icon_edit.png/" alt="[DNE]" width="20"></th>)";
-    row[2] = "<th>" + to_string(fs::file_size(p)) + "</th>";
+    row[2] = "<th>" + byteConversion(fs::file_size(p)) + "</th>";
     row[3] = "<th>" + string(timeB) + "</th>";
     row[4] = "<th>time2</th>";
   }
