@@ -293,38 +293,19 @@ void serveFile(const HttpRequest &req, HttpResponse *resp, const string &type) {
 }
 
 // EX this passes the file type to serveIndexHtml()
-int checkFileType(string path) {
+string getMimeType(string path) {
   string img = ".jpg";
   string vid = ".m4v";
-  string cpp = ".cpp";
-  string txt = ".txt";
+  string html = ".html";
 
   if (path.find(img) != std::string::npos) {
-    return 0;
+    return "image/jpg";
   } else if (path.find(vid) != std::string::npos) {
-    return 1;
-  } else if ((path.find(cpp) != std::string::npos) ||
-             (path.find(txt) != std::string::npos)) {
-    return 2;
+    return "video/mp4";
+  } else if (path.find(html) != std::string::npos) {
+    return "text/html";
   }
-  return 2;
-}
-
-// EX decides witch html header to use
-void serveIndexHtml(const HttpRequest &req, HttpResponse *resp) {
-  req.Print();
-  string path = homeFilePath + req.request_uri_;
-  if (fs::is_directory(path)) {
-    resp->SetHtmlContent(htmlFormat(webContentSort(req.request_uri_)));
-  } else if (checkFileType(path) == 2) {
-    serveFile(req, resp, "text/html");
-    // resp->SetContent(getFile(req.request_uri_), "text/html");
-  } else if (checkFileType(path) == 1) {
-    serveFile(req, resp, "video/mp4");
-    // resp->SetContent(getFile(req.request_uri_), "video/mp4");
-  } else if (checkFileType(path) == 0) {
-    resp->SetContent(getFile(req.request_uri_), "image/jpg");
-  }
+  return "text/plain";
 }
 
 // TODO add recent files function
@@ -342,7 +323,13 @@ void handle(const TcpConnection &conn) {
   if (req.request_uri_ == "/recent") {
     resp.SetHtmlContent(htmlFormat(everyFileSort(homeFilePath, 5)));
   }
-  serveIndexHtml(req, &resp);
+
+  string path = homeFilePath + req.request_uri_;
+  if (fs::is_directory(path)) {
+    resp.SetHtmlContent(htmlFormat(webContentSort(req.request_uri_)));
+  } else {
+    serveFile(req, &resp, getMimeType(path));
+  }
 
   resp.Send(conn.fd);
 }
