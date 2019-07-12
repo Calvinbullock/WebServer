@@ -37,9 +37,7 @@ string creatRow(string path, string unK);
 -- ------------- in a coment EX = Exspanation or do not remove ------------- --
 ** -------------------------------- ------- -------------------------------- */
 
-// testing changes
-
-// TODO deal with dSE
+// Fin TODO deal with dSE
 // TODO find a better func name
 // EX puts every file in a vetor with the date it was added
 vector<FileSort> everyFileVec(string path) {
@@ -74,7 +72,7 @@ vector<FileSort> everyFileVec(string path) {
   return everyFile;
 }
 
-// TODO sort bases on date
+// Fin TODO sort bases on date
 // EX returns the html table for oldest and newest files
 string everyFileSort(string path, int numOFRows) {
   vector<FileSort> everyFile = everyFileVec(path);
@@ -327,6 +325,7 @@ void serveIndexHtml(const HttpRequest &req, HttpResponse *resp) {
   }
 }
 
+// TODO add recent files function
 // EX The function we want to make the thread run.
 void handle(const TcpConnection &conn) {
   HttpRequest req = HttpRequest::parse(conn.fd);
