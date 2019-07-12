@@ -53,6 +53,7 @@ void everyFileVec(string path, vector<FileSort> *everyFile) {
   // EX checks if directery is open
   if ((dir = opendir(path.c_str())) == NULL) {
     perror("");
+    return;
   }
 
   cout << "new dir: -----" << path << endl; // DeBug remove
@@ -61,7 +62,7 @@ void everyFileVec(string path, vector<FileSort> *everyFile) {
     string unK = string(ent->d_name); // what is this again?
     fs::path p = path + unK;
     auto dSE = fs::last_write_time(p).time_since_epoch();
-    printf("%s\n", ent->d_name);
+    printf("%s %ld\n", ent->d_name, dSE.count());
 
     if (fs::is_directory(path + unK)) {
       // EX "if" checks for the "." ".." so it dose not infa loop
@@ -70,7 +71,7 @@ void everyFileVec(string path, vector<FileSort> *everyFile) {
       }
     } else {
       everyFile->push_back(
-          FileSort(dSE.count(), "<tr>" + creatRow(path, unK) + "</tr>"));
+          FileSort(dSE, "<tr>" + creatRow(path, unK) + "</tr>"));
     }
   }
   closedir(dir);
@@ -84,7 +85,7 @@ string everyFileSort(string path, int numOfRows) {
 
   sort(everyFile.begin(), everyFile.end(),
        [](const FileSort &a, const FileSort &b) {
-         return a.getDate() < b.getDate();
+         return a.getDate() > b.getDate();
        });
   html = "<table>";
   for (int i = 0; i < numOfRows; i++) {
@@ -92,7 +93,6 @@ string everyFileSort(string path, int numOfRows) {
   }
 
   return html + "</table>";
-  ;
 }
 
 // EX sorts the vector indexes that hold the rows & formats for HTML table
@@ -213,6 +213,7 @@ void serveFile(const HttpRequest &req, HttpResponse *resp, const string &type) {
   int fd = open(path.c_str(), 0);
   if (fd == -1) {
     cout << "Unable to open file: " << path << endl;
+    return;
   }
 
   int file_size = lseek(fd, 0, SEEK_END);
@@ -250,7 +251,7 @@ void handle(const TcpConnection &conn) {
     exit(1);
   }
   if (req.request_uri_ == "/recent") {
-    resp.SetHtmlContent(htmlFormat(everyFileSort(homeFilePath, 5)));
+    resp.SetHtmlContent(htmlFormat(everyFileSort(homeFilePath, 50)));
   } else {
     string path = homeFilePath + req.request_uri_;
     if (fs::is_directory(path)) {

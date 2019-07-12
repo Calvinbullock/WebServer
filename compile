@@ -1,1 +1,2 @@
-clang++ -Wall -Werror -Wshadow -pthread http.cc server.cc main.cc -lstdc++fs -o server
+# Should fix things to work with -Wconversion
+clang++ -Wall -Werror -Wshadow -g -pthread http.cc server.cc main.cc -lstdc++fs -o server
