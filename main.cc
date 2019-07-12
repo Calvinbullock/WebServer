@@ -1,8 +1,3 @@
-// To compile, in term run:
-// clang++ -Wall -Werror -Wshadow -pthread http.cc server.cc main.cc -o
-// server
-// it angry
-
 #include <dirent.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -33,7 +28,7 @@ const string homeFilePath = "/var/www/html";
 const int port = 8080;
 #else // EX Running as development
 const string homeFilePath = "/home/calvin/Desktop/Code";
-const int port = 8001;
+const int port = 8000;
 #endif
 
 vector<string> getFileDirectory(string path);
@@ -41,7 +36,7 @@ string creatRow(string path, string unK);
 
 /* -------------------------------- ------- -------------------------------- **
 -- -------------------------------- Methods -------------------------------- --
--- ------------- in a coment EX = Exspanation or do not remove ------------- --
+-- ------------- in a coment EX = Explanation or do not remove ------------- --
 ** -------------------------------- ------- -------------------------------- */
 
 // TODO find a better func name
@@ -56,7 +51,6 @@ void everyFileVec(string path, vector<FileSort> *everyFile) {
     return;
   }
 
-  cout << "new dir: -----" << path << endl; // DeBug remove
   /* EX adds all the files and directories within directory to everyFile*/
   while ((ent = readdir(dir)) != NULL) {
     string unK = string(ent->d_name); // what is this again?
@@ -113,11 +107,11 @@ string webContentSort(string path) {
   // EX this row is the parentDirectory Row than added to the rest
   webContentF = R"stop(
         <tr>
-          <th> </th>
+          <th><img src="/WebServer/assets/backArrow_icon_edit.png/" alt="[DNE]" width="15"></th>
           <th><a href="../"> &lt;&lt;PD </a></th>
-          <th> </th>
-          <th> </th>
-          <th> </th>
+          <th> -- </th>
+          <th> -- </th>
+          <th> -- </th>
         </tr>
       )stop" + webContentF;
   return webContentF;
@@ -128,7 +122,17 @@ string htmlFormat(string tableRows) {
   return HTML_HEAD + tableRows + HTML_TAIL;
 }
 
+string byteConversion(int bytes) {
+  if (bytes > 1000000) {
+    bytes = bytes / 1000000;
+    return to_string(bytes) + "MB";
+  }
+  return "";
+}
+
+// TODO add byts conversion for fileSize
 // TODO needs the last time a file was accsesed
+// TODO remove timeA exspresion after dealing with timeB
 // TODO strftime insted of asctime
 // EX returns the elements of a table row
 string creatRow(string path, string unK) {
@@ -136,20 +140,24 @@ string creatRow(string path, string unK) {
   string row[5];
   fs::path p = path + unK;
   auto ftime = fs::last_write_time(p);
-  std::time_t cftime =
-      decltype(ftime)::clock::to_time_t(ftime); // assuming system_clock
+  // assuming system_clock
+  std::time_t cftime = decltype(ftime)::clock::to_time_t(ftime);
   string timeA = asctime(std::localtime(&cftime));
+
+  // TODO finish this stuff
+  char timeB[80];
+  strftime(timeB, 80, "%b/%d/%y", std::localtime(&cftime));
   row[1] = "<th><a href = \"" + unK + "/\">" + unK + "</a></th>";
 
   if (fs::is_directory(path + unK)) {
     row[0] =
-        R"(<th><img src="/WebServer/assets/folder_icon.jpg/" alt="[DNE]" width="20"></th>)";
+        R"(<th><img src="/WebServer/assets/folder_icon_edit.png/" alt="[DNE]" width="20"></th>)";
     row[2] = "<th>null</th>";
     row[3] = "<th>null</th>";
     row[4] = "<th>null</th>";
   } else {
     row[0] =
-        R"(<th><img src="/WebServer/assets/file_icon.png/" alt="[DNE]" width="20"></th>)";
+        R"(<th><img src="/WebServer/assets/file_icon_edit.png/" alt="[DNE]" width="20"></th>)";
     row[2] = "<th>" + to_string(fs::file_size(p)) + "</th>";
     row[3] = "<th>" + timeA + "</th>";
     row[4] = "<th>time2</th>";
@@ -157,7 +165,6 @@ string creatRow(string path, string unK) {
   return row[0] + row[1] + row[2] + row[3] + row[4];
 }
 
-// TODO clean up ----------------------------------------------------**
 // EX creats and fills the vector that holds the table rows html
 vector<string> getFileDirectory(string path) {
   vector<string> webContent;

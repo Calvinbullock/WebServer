@@ -39,7 +39,7 @@ const std::string HTML_HEAD = R"RAW(<!DOCTYPE html>
             <th>Icon</th>
             <th>Name</th>
             <th>Size</th>
-            <th>Date </th>
+            <th>Last Modified </th>
             <th>Date </th>
           </tr>
           <tr>
