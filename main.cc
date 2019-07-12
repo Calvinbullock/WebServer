@@ -107,7 +107,7 @@ string webContentSort(string path) {
   // EX this row is the parentDirectory Row than added to the rest
   webContentF = R"stop(
         <tr>
-          <th><img src="/WebServer/assets/backArrow_icon_edit.png/" alt="[DNE]" width="15"></th>
+          <th><img src="/WebServer/assets/backArrow_icon_edit.png/" alt="[DNE]" width="10"></th>
           <th><a href="../"> &lt;&lt;PD </a></th>
           <th> -- </th>
           <th> -- </th>
@@ -151,15 +151,20 @@ string creatRow(string path, string unK) {
   if (fs::is_directory(path + unK)) {
     row[0] =
         R"(<th><img src="/WebServer/assets/folder_icon_edit.png/" alt="[DNE]" width="20"></th>)";
-    row[2] = "<th>--</th>";
+    row[2] = "<th>0 B</th>";
     row[3] = "<th>--</th>";
     row[4] = "<th>--</th>";
   } else {
-    row[0] =
-        R"(<th><img src="/WebServer/assets/file_icon_edit.png/" alt="[DNE]" width="20"></th>)";
+    if ((path + unK).find(".m4v") != std::string::npos) {
+      row[0] =
+          R"(<th><img src="/WebServer/assets/video_icon.png/" alt="[DNE]" width="20"></th>)";
+    } else {
+      row[0] =
+          R"(<th><img src="/WebServer/assets/file_icon_edit.png/" alt="[DNE]" width="20"></th>)";
+    }
     row[2] = "<th>" + byteConversion(fs::file_size(p)) + "</th>";
     row[3] = "<th>" + string(timeB) + "</th>";
-    row[4] = "<th>time2</th>";
+    row[4] = "<th>--</th>";
   }
   return row[0] + row[1] + row[2] + row[3] + row[4];
 }
