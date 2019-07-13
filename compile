@@ -1,2 +1,1 @@
-# Should fix things to work with -Wconversion
 clang++ -std=c++14 -Wall -Werror -Wshadow -Wconversion -g -pthread http.cc server.cc main.cc -lstdc++fs -o server

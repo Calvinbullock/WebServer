@@ -27,7 +27,7 @@ using namespace std;
 const string homeFilePath = "/var/www/html";
 const int port = 8080;
 #else // EX Running as development
-const string homeFilePath = "/home/calvin/Desktop/Code";
+const string homeFilePath = "/home/calvin/Desktop/Code/WebServer";
 const int port = 8000;
 #endif
 
@@ -107,9 +107,8 @@ string webContentSort(string path) {
   // EX this row is the parentDirectory Row than added to the rest
   webContentF = R"stop(
         <tr>
-          <th><img src="/WebServer/assets/backArrow_icon_edit.png/" alt="[DNE]" width="10"></th>
+          <th><img src="/assets/backArrow_icon_edit.png" alt="[DNE]" width="10"></th>
           <th><a href="../"> &lt;&lt;PD </a></th>
-          <th> -- </th>
           <th> -- </th>
           <th> -- </th>
         </tr>
@@ -123,7 +122,7 @@ string htmlFormat(string tableRows) {
 }
 
 // converts bytes to needed unit
-string byteConversion(long long int size) {
+string byteConversion(unsigned long size) {
   int unit = 0;
   string units[] = {"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
 
@@ -135,6 +134,7 @@ string byteConversion(long long int size) {
   return to_string((int)size) + " " + units[unit];
 }
 
+// TODO unK = file name
 // TODO needs the last time a file was accsesed
 // EX returns the elements of a table row
 string creatRow(string path, string unK) {
@@ -146,27 +146,26 @@ string creatRow(string path, string unK) {
   std::time_t cftime = decltype(ftime)::clock::to_time_t(ftime);
   char timeB[80];
   strftime(timeB, 80, "%b/%d/%y", std::localtime(&cftime));
-  row[1] = "<th><a href = \"" + unK + "/\">" + unK + "</a></th>";
 
   if (fs::is_directory(path + unK)) {
     row[0] =
-        R"(<th><img src="/WebServer/assets/folder_icon_edit.png/" alt="[DNE]" width="20"></th>)";
+        R"(<th><img src="/assets/folder_icon_edit.png" alt="[DNE]" width="20"></th>)";
+    row[1] = "<th><a href = \"" + unK + "/\">" + unK + "</a></th>";
     row[2] = "<th>0 B</th>";
     row[3] = "<th>--</th>";
-    row[4] = "<th>--</th>";
   } else {
     if ((path + unK).find(".m4v") != std::string::npos) {
       row[0] =
-          R"(<th><img src="/WebServer/assets/video_icon.png/" alt="[DNE]" width="20"></th>)";
+          R"(<th><img src="/assets/video_icon.png" alt="[DNE]" width="20"></th>)";
     } else {
       row[0] =
-          R"(<th><img src="/WebServer/assets/file_icon_edit.png/" alt="[DNE]" width="20"></th>)";
+          R"(<th><img src="/assets/file_icon_edit.png" alt="[DNE]" width="20"></th>)";
     }
+    row[1] = "<th><a href = \"" + unK + "\">" + unK + "</a></th>";
     row[2] = "<th>" + byteConversion(fs::file_size(p)) + "</th>";
     row[3] = "<th>" + string(timeB) + "</th>";
-    row[4] = "<th>--</th>";
   }
-  return row[0] + row[1] + row[2] + row[3] + row[4];
+  return row[0] + row[1] + row[2] + row[3];
 }
 
 // EX creats and fills the vector that holds the table rows html
@@ -219,7 +218,6 @@ string getFile(string path) {
 // EX serves the files
 void serveFile(const HttpRequest &req, HttpResponse *resp, const string &type) {
   string path = homeFilePath + req.request_uri_;
-  path = path.substr(0, path.size() - 1);
 
   int fd = open(path.c_str(), 0);
   if (fd == -1) {
