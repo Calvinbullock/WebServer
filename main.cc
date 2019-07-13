@@ -29,7 +29,7 @@ const string homeFilePath = "/var/www/html";
 const int port = 8080;
 #else // EX Running as development
 const string homeFilePath = ".";
-const int port = 8000;
+// const int port = 8000;
 #endif
 
 vector<string> getFileDirectory(string path);
@@ -276,8 +276,17 @@ void handle(const TcpConnection &conn) {
   resp.Send(conn.fd);
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+  int port = 8000;
+  if (argc > 0) {
+    port = atoi(argv[1]);
+    if (port < 1 || port > __SHRT_MAX__) {
+      cout << "Invalid port: " << argv[1] << endl;
+      return 1;
+    }
+  }
   TcpServer server(handle);
-  server.Run(port, 4);
+  server.Run((uint16_t)port, 4);
   // cout << everyFileSort("/home/calvin/Desktop/Code", 5) << endl; // debug
+  return 0;
 }

@@ -40,8 +40,6 @@ public:
 // TODO: This class is really ugly at this point. Just don't even look.
 class HttpResponse {
 public:
-  HttpResponse() {}
-
   std::string content;
   std::string type;
   int fd_data = -1;
