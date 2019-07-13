@@ -52,26 +52,6 @@ public:
     this->type = "text/html";
   }
 
-  void SetPlainContent(const std::string &contentx) {
-    this->content = contentx;
-    this->type = "image/jpg";
-  }
-
-  void SetJsonContent(const std::string &contentx) {
-    this->content = contentx;
-    this->type = "application/json";
-  }
-
-  void SetJsContent(const std::string &contentx) {
-    this->content = contentx;
-    this->type = "application/javascript";
-  }
-
-  void SetContent(const std::string &contentx, std::string typex) {
-    this->content = contentx;
-    this->type = typex;
-  }
-
   void SetContent(const std::string typex, int data_fd, size_t length) {
     this->type = typex;
     this->fd_data = data_fd;
