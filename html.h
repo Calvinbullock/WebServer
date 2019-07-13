@@ -1,6 +1,7 @@
 // EX creats the html page
 #include <string>
-const std::string HTML_HEAD = R"RAW(<!DOCTYPE html> 
+
+const std::string HTML_HEAD = R"RAW(<!DOCTYPE html>
   <html>
     <head>
       <title>Movie index</title>
