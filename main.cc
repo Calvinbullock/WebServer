@@ -259,6 +259,10 @@ void handle(const TcpConnection &conn) {
 
   LOG_INFO("%s request for \"%s\"", req.method_.c_str(),
            req.request_uri_.c_str());
+  // TODO helps with handling brkn requets
+  if (req.method_ == "") {
+    return;
+  }
   if (req.request_uri_ == "/stop") {
     exit(1);
   }
@@ -278,7 +282,7 @@ void handle(const TcpConnection &conn) {
 
 int main(int argc, char *argv[]) {
   int port = 8000;
-  if (argc > 0) {
+  if (argc > 1) {
     port = atoi(argv[1]);
     if (port < 1 || port > __SHRT_MAX__) {
       cout << "Invalid port: " << argv[1] << endl;
