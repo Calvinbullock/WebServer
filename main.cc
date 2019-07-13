@@ -16,6 +16,7 @@
 #include "FileSortTools.cpp"
 #include "html.h"
 #include "http.h"
+#include "log.h"
 #include "server.h"
 
 namespace fs = std::experimental::filesystem;
@@ -27,7 +28,7 @@ using namespace std;
 const string homeFilePath = "/var/www/html";
 const int port = 8080;
 #else // EX Running as development
-const string homeFilePath = "/home/calvin/Desktop/Code/WebServer";
+const string homeFilePath = ".";
 const int port = 8000;
 #endif
 
@@ -185,7 +186,7 @@ vector<string> getFileDirectory(string path) {
   int i = 0;
   while ((ent = readdir(dir)) != NULL) {
     string unK = string(ent->d_name); // what is this
-    printf("%s\n", ent->d_name);
+    // LOG_DEBUG("directory entry: %s", ent->d_name);
     webContent.push_back("<tr>" + creatRow(path, unK) + "</tr>");
     i++;
   }
@@ -222,6 +223,7 @@ void serveFile(const HttpRequest &req, HttpResponse *resp, const string &type) {
   int fd = open(path.c_str(), 0);
   if (fd == -1) {
     cout << "Unable to open file: " << path << endl;
+    resp->SetHtmlContent("Invalid Request");
     return;
   }
 
@@ -255,7 +257,8 @@ void handle(const TcpConnection &conn) {
   HttpRequest req = HttpRequest::parse(conn.fd);
   HttpResponse resp;
 
-  cout << "## " << req.method_ << " " << req.request_uri_ << endl;
+  LOG_INFO("%s request for \"%s\"", req.method_.c_str(),
+           req.request_uri_.c_str());
   if (req.request_uri_ == "/stop") {
     exit(1);
   }

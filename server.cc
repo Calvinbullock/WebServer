@@ -7,6 +7,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "log.h"
+
 #define PENDING_CONNECTIONS 20
 
 namespace obsequi {
@@ -33,7 +35,7 @@ void TcpServer::Run(uint16_t port, int num_worker_threads) {
     exit(errno);
   }
 
-  printf("%s:%d port open\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+  LOG_INFO("port open %s:%d", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
   // Make it a "listening socket"
   if (listen(sockfd, PENDING_CONNECTIONS) != 0) {
@@ -54,8 +56,9 @@ void TcpServer::Run(uint16_t port, int num_worker_threads) {
     connection.fd = accept(sockfd, (struct sockaddr *)&connection.client_addr,
                            &connection.client_addr_len);
 
-    printf("%s:%d connected\n", inet_ntoa(connection.client_addr.sin_addr),
-           ntohs(connection.client_addr.sin_port));
+    LOG_INFO("accepted connection %s:%d",
+             inet_ntoa(connection.client_addr.sin_addr),
+             ntohs(connection.client_addr.sin_port));
 
     Queue(connection);
   }
