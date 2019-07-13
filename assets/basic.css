@@ -1,0 +1,50 @@
+body {
+  background-color: #101010;
+  color: white;
+}
+
+a {
+  opacity: 0.9;
+  color: #ffd700;
+}
+
+a:visited {
+  color: #009a00;
+}
+
+a:hover {
+  color: #ffff4d;
+}
+
+th {
+  opacity: 0.6;
+}
+
+td {
+    padding:0 0px 0 5px;
+}
+
+.high {
+  opacity: 0.87;
+}
+
+.mid {
+  opacity: 0.6;
+}
+
+.low {
+  opacity: 0.38;
+}
+
+.icon {
+  opacity: 0.6;
+}
+
+.filesize {
+  opacity: 0.6;
+}
+
+.lastmodified {
+  opacity: 0.6;
+}
+/**/

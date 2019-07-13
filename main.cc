@@ -108,10 +108,10 @@ string webContentSort(string path) {
   // EX this row is the parentDirectory Row than added to the rest
   webContentF = R"stop(
         <tr>
-          <th><img src="/assets/backArrow_icon_edit.png" alt="[DNE]" width="10"></th>
-          <th><a href="../"> &lt;&lt;PD </a></th>
-          <th> -- </th>
-          <th> -- </th>
+          <td class="icon"        ><img src="/assets/backArrow_icon_edit.png" alt="[DNE]" width="10"></td>
+          <td class="filename"    ><a href="../"> &lt;&lt;PD </a></td>
+          <td class="filesize"    > -- </td>
+          <td class="lastmodified"> -- </td>
         </tr>
       )stop" + webContentF;
   return webContentF;
@@ -150,21 +150,25 @@ string creatRow(string path, string unK) {
 
   if (fs::is_directory(path + unK)) {
     row[0] =
-        R"(<th><img src="/assets/folder_icon_edit.png" alt="[DNE]" width="20"></th>)";
-    row[1] = "<th><a href = \"" + unK + "/\">" + unK + "</a></th>";
-    row[2] = "<th>0 B</th>";
-    row[3] = "<th>--</th>";
+        R"(<td class="icon"><img src="/assets/folder_icon_edit.png" alt="[DNE]" width="20"></td>)";
+    row[1] = "<td class=\"filename\"    ><a href = \"" + unK + "/\">" + unK +
+             "</a></td>";
+    row[2] = "<td class=\"filesize\"    >0 B</td>";
+    row[3] = "<td class=\"lastmodified\">--</td>";
   } else {
-    if ((path + unK).find(".m4v") != std::string::npos) {
+    if ((path + unK).find(".m4v") != std::string::npos ||
+        (path + unK).find(".mp4") != std::string::npos) {
       row[0] =
-          R"(<th><img src="/assets/video_icon.png" alt="[DNE]" width="20"></th>)";
+          R"(<td class="icon"><img src="/assets/video_icon.png" alt="[DNE]" width="20"></td>)";
     } else {
       row[0] =
-          R"(<th><img src="/assets/file_icon_edit.png" alt="[DNE]" width="20"></th>)";
+          R"(<td class="icon"><img src="/assets/file_icon_edit.png" alt="[DNE]" width="20"></td>)";
     }
-    row[1] = "<th><a href = \"" + unK + "\">" + unK + "</a></th>";
-    row[2] = "<th>" + byteConversion(fs::file_size(p)) + "</th>";
-    row[3] = "<th>" + string(timeB) + "</th>";
+    row[1] = "<td class=\"filename\"    ><a href = \"" + unK + "\">" + unK +
+             "</a></td>";
+    row[2] = "<td class=\"filesize\"    >" + byteConversion(fs::file_size(p)) +
+             "</td>";
+    row[3] = "<td class=\"lastmodified\">" + string(timeB) + "</td>";
   }
   return row[0] + row[1] + row[2] + row[3];
 }
@@ -241,13 +245,18 @@ string getMimeType(string path) {
   string img = ".jpg";
   string vid = ".m4v";
   string html = ".html";
+  string vid2 = ".mp4";
+  string css = ".css";
 
   if (path.find(img) != std::string::npos) {
     return "image/jpg";
-  } else if (path.find(vid) != std::string::npos) {
+  } else if (path.find(vid) != std::string::npos ||
+             path.find(vid) != std::string::npos) {
     return "video/mp4";
   } else if (path.find(html) != std::string::npos) {
     return "text/html";
+  } else if (path.find(css) != std::string::npos) {
+    return "text/css";
   }
   return "text/plain";
 }

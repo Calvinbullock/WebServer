@@ -2,67 +2,55 @@
 #include <string>
 
 const std::string HTML_HEAD = R"RAW(<!DOCTYPE html>
-  <html>
-    <head>
-      <title>Movie index</title>
-      <meta name="viewport" content="width=device-width,inital-scale=1">
-      <style>
-      body {
-        background-color: #272727;
-        color: #ffffff;
-      }
+<html>
 
-      a {
-        color: #cccc00;
-      }
+  <head>
+    <title>Movie index</title>
+    <meta name="viewport" content="width=device-width,inital-scale=1">
+    <link href="/assets/basic.css" rel="stylesheet" type="text/css" media="all">
+  </head>
 
-      a:visited {
-        color: #009a00;
-      }
+  <body>
+    <div>
+    </div>
+    <p>
+      <h2><a href="/">Movie Index</a></h2>
+      <table>
+        <tr>
+          <th></th>
+          <th>Name</th>
+          <th>Size</th>
+          <th>Mod Date</th>
+        </tr>
+        <tr class="low">
+          <td colspan="4">
+            <hr>
+          </td>
+        </tr>
+        <!-- END OF HEADER-->
+        )RAW";
 
-      a:hover {
-        color: #ffff4d;
-      }
-    </style>
-    </head>
-
-    <body>
-      <div>
-      </div>
-      <p>
-        <h2><a href="/">Movie Index</a></h2>
-        <table style="width:30%">
-          <tr>
-            <th>Icon</th>
-            <th>Name</th>
-            <th>  Size  </th>
-            <th>Last Modified </th>
-          </tr>
-          <tr>
-            <th colspan="5">
+const std::string HTML_TAIL = R"RAW(
+          <!-- START OF FOOTER-->
+          <tr class="low">
+            <th colspan="4">
               <hr>
-            </th>
-          </tr>)RAW";
-
-const std::string HTML_TAIL = R"RAW(<tr>
-            <th colspan="5">
-              <hr>
-            </th>
+            </td>
           </tr>
           <tr>
-            <th><img src="/assets/folder_icon_edit.png" alt="[DNE]" width="20"></th>
-             <th><a id="one" href="/recent">Recently_Added</a><br></th>
-            <th>--</th>
-            <th>--</th>
+            <td class="icon"><img src="/assets/folder_icon_edit.png" alt="[DNE]" width="20"></td>
+            <td class="filename"><a id="one" href="/recent">Recently_Added</a><br></td>
+            <td class="filesize">--</td>
+            <td class="lastmodified">--</td>
           </tr>
-          <tr>
-            <th colspan="5">
-              <hr>
-            </th>
-          </tr>
-        </table>
-        v.2.5 beta
-      </p>
-    </body>
+        <tr class="low">
+          <td colspan="4">
+            <hr>
+          </td>
+        </tr>
+      </table>
+      <div class="low">v0.5</div>
+    </p>
+  </body>
 
-  </html>)RAW";
+</html>)RAW";
