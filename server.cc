@@ -14,7 +14,7 @@ namespace obsequi {
 TcpServer::TcpServer(ConnectionHandler handler)
     : handler_(handler), queue_(), mutex_(), notifier_() {}
 
-void TcpServer::Run(int port, int num_worker_threads) {
+void TcpServer::Run(uint16_t port, int num_worker_threads) {
   // Create streaming socket
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if (sockfd < 0) {

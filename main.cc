@@ -82,7 +82,7 @@ string everyFileSort(string path, int numOfRows) {
          return a.getDate() > b.getDate();
        });
   html = "<table>";
-  for (int i = 0; i < numOfRows; i++) {
+  for (size_t i = 0; i < numOfRows; i++) {
     html += everyFile[i].getRow();
   }
 
@@ -95,7 +95,7 @@ string webContentSort(string path) {
   string webContentF;
 
   sort(webContent.begin(), webContent.end());
-  for (int i = 0; i < webContent.size(); i++) {
+  for (size_t i = 0; i < webContent.size(); i++) {
     // TODO should this if move to vec creation to eliminate to itterations?
     if (webContent[i].find("./") != std::string::npos ||
         webContent[i].find("..") != std::string::npos) {
@@ -223,13 +223,13 @@ void serveFile(const HttpRequest &req, HttpResponse *resp, const string &type) {
     return;
   }
 
-  int file_size = lseek(fd, 0, SEEK_END);
-  int err = lseek(fd, 0, SEEK_SET);
+  ssize_t file_size = lseek(fd, 0, SEEK_END);
+  ssize_t err = lseek(fd, 0, SEEK_SET);
 
   // EX debug for lseek
   cout << file_size << ": " << err << ": " << endl;
 
-  resp->SetContent(type, fd, file_size);
+  resp->SetContent(type, fd, (size_t)file_size);
 }
 
 // EX this passes the file type to serveIndexHtml()

@@ -24,7 +24,7 @@ public:
   TcpServer(ConnectionHandler handler);
 
   // Never returns.
-  void Run(int port, int num_worker_threads);
+  void Run(uint16_t port, int num_worker_threads);
 
   // TODO: Add some way to cleanly shutdown. A drain function that stops
   // accepting new functions and waits for all worker threads to join.
