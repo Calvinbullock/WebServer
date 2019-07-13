@@ -24,13 +24,7 @@ namespace fs = std::experimental::filesystem;
 using namespace obsequi;
 using namespace std;
 
-#if 0 // EX Running as production
-const string homeFilePath = "/var/www/html";
-const int port = 8080;
-#else // EX Running as development
 const string homeFilePath = ".";
-// const int port = 8000;
-#endif
 
 vector<string> getFileDirectory(string path);
 string creatRow(string path, string unK);
@@ -40,14 +34,17 @@ string creatRow(string path, string unK);
 -- ------------- in a coment EX = Explanation or do not remove ------------- --
 ** -------------------------------- ------- -------------------------------- */
 
+string FilePath(const string &path) { return homeFilePath + path; }
+
 // TODO find a better func name
 // EX puts every file in a vetor with the date it was added
 void everyFileVec(string path, vector<FileSort> *everyFile) {
   path += "/";
   DIR *dir;
+
   struct dirent *ent;
   // EX checks if directery is open
-  if ((dir = opendir(path.c_str())) == NULL) {
+  if ((dir = opendir(FilePath(path).c_str())) == NULL) {
     perror("");
     return;
   }
@@ -55,18 +52,18 @@ void everyFileVec(string path, vector<FileSort> *everyFile) {
   /* EX adds all the files and directories within directory to everyFile*/
   while ((ent = readdir(dir)) != NULL) {
     string unK = string(ent->d_name); // what is this again?
-    fs::path p = path + unK;
+    fs::path p = FilePath(path + unK);
     auto dSE = fs::last_write_time(p).time_since_epoch();
     printf("%s %ld\n", ent->d_name, dSE.count());
 
-    if (fs::is_directory(path + unK)) {
+    if (fs::is_directory(FilePath(path + unK))) {
       // EX "if" checks for the "." ".." so it dose not infa loop
       if ((unK != ".") && (unK != "..")) {
         everyFileVec(path + unK, everyFile);
       }
     } else {
       everyFile->push_back(
-          FileSort(dSE, "<tr>" + creatRow(path, unK) + "</tr>"));
+          FileSort(dSE, "<tr>" + creatRow(path + unK, unK) + "</tr>"));
     }
   }
   closedir(dir);
@@ -75,7 +72,7 @@ void everyFileVec(string path, vector<FileSort> *everyFile) {
 // EX returns the html table for oldest and newest files
 string everyFileSort(string path, int numOfRows) {
   vector<FileSort> everyFile;
-  everyFileVec(path, &everyFile);
+  everyFileVec("", &everyFile);
   string html;
 
   sort(everyFile.begin(), everyFile.end(),
@@ -138,34 +135,35 @@ string byteConversion(unsigned long size) {
 // TODO unK = file name
 // TODO needs the last time a file was accsesed
 // EX returns the elements of a table row
-string creatRow(string path, string unK) {
+string creatRow(string webpath, string name) {
   // EX this method is called only from getFiledirectery
   string row[5];
-  fs::path p = path + unK;
+  string filepath = FilePath(webpath);
+  fs::path p = filepath;
   auto ftime = fs::last_write_time(p);
   // assuming system_clock
   std::time_t cftime = decltype(ftime)::clock::to_time_t(ftime);
   char timeB[80];
   strftime(timeB, 80, "%b/%d/%y", std::localtime(&cftime));
 
-  if (fs::is_directory(path + unK)) {
+  if (fs::is_directory(filepath)) {
     row[0] =
         R"(<td class="icon"><img src="/assets/folder_icon_edit.png" alt="[DNE]" width="20"></td>)";
-    row[1] = "<td class=\"filename\"    ><a href = \"" + unK + "/\">" + unK +
-             "</a></td>";
+    row[1] = "<td class=\"filename\"    ><a href = \"" + webpath + "/\">" +
+             name + "</a></td>";
     row[2] = "<td class=\"filesize\"    >0 B</td>";
     row[3] = "<td class=\"lastmodified\">--</td>";
   } else {
-    if ((path + unK).find(".m4v") != std::string::npos ||
-        (path + unK).find(".mp4") != std::string::npos) {
+    if ((filepath).find(".m4v") != std::string::npos ||
+        (filepath).find(".mp4") != std::string::npos) {
       row[0] =
           R"(<td class="icon"><img src="/assets/video_icon.png" alt="[DNE]" width="20"></td>)";
     } else {
       row[0] =
           R"(<td class="icon"><img src="/assets/file_icon_edit.png" alt="[DNE]" width="20"></td>)";
     }
-    row[1] = "<td class=\"filename\"    ><a href = \"" + unK + "\">" + unK +
-             "</a></td>";
+    row[1] = "<td class=\"filename\"    ><a href = \"" + webpath + "\">" +
+             name + "</a></td>";
     row[2] = "<td class=\"filesize\"    >" + byteConversion(fs::file_size(p)) +
              "</td>";
     row[3] = "<td class=\"lastmodified\">" + string(timeB) + "</td>";
@@ -176,12 +174,12 @@ string creatRow(string path, string unK) {
 // EX creats and fills the vector that holds the table rows html
 vector<string> getFileDirectory(string path) {
   vector<string> webContent;
-  path = homeFilePath + path;
+  string filepath = FilePath(path);
   DIR *dir;
   struct dirent *ent;
 
   // EX checks if directery is open
-  if ((dir = opendir(path.c_str())) == NULL) {
+  if ((dir = opendir(filepath.c_str())) == NULL) {
     perror("");
     return webContent;
   }
@@ -191,38 +189,16 @@ vector<string> getFileDirectory(string path) {
   while ((ent = readdir(dir)) != NULL) {
     string unK = string(ent->d_name); // what is this
     // LOG_DEBUG("directory entry: %s", ent->d_name);
-    webContent.push_back("<tr>" + creatRow(path, unK) + "</tr>");
+    webContent.push_back("<tr>" + creatRow(path + unK, unK) + "</tr>");
     i++;
   }
   closedir(dir);
   return webContent;
 }
 
-// EX looks at the files
-string getFile(string path) {
-  path = homeFilePath + path;
-  path = path.substr(0, path.size() - 1);
-  string data;
-
-  cout << "getFile path = " << path << endl;
-
-  ifstream myfile(path);
-  if (myfile.is_open()) {
-    char c;
-    while (myfile.get(c)) {
-      data += (char)c;
-    }
-    myfile.close();
-  } else {
-    cout << "Unable to open file: " << path << endl;
-  }
-  cout << data.size() << endl;
-  return data;
-}
-
 // EX serves the files
 void serveFile(const HttpRequest &req, HttpResponse *resp, const string &type) {
-  string path = homeFilePath + req.request_uri_;
+  string path = FilePath(req.request_uri_);
 
   int fd = open(path.c_str(), 0);
   if (fd == -1) {
@@ -278,7 +254,7 @@ void handle(const TcpConnection &conn) {
   if (req.request_uri_ == "/recent") {
     resp.SetHtmlContent(htmlFormat(everyFileSort(homeFilePath, 50)));
   } else {
-    string path = homeFilePath + req.request_uri_;
+    string path = FilePath(req.request_uri_);
     if (fs::is_directory(path)) {
       resp.SetHtmlContent(htmlFormat(webContentSort(req.request_uri_)));
     } else {
@@ -299,7 +275,7 @@ int main(int argc, char *argv[]) {
     }
   }
   TcpServer server(handle);
-  server.Run((uint16_t)port, 4);
+  server.Run((uint16_t)port, 20);
   // cout << everyFileSort("/home/calvin/Desktop/Code", 5) << endl; // debug
   return 0;
 }
