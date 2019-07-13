@@ -32,6 +32,7 @@ void HttpRequest::Print() const {
 HttpRequest HttpRequest::parse(int fd) {
   char buffer[BUF_SIZE];
   ssize_t len = recv(fd, buffer, BUF_SIZE - 1, 0);
+  // TODO: We should verify it is not negative.
   buffer[len] = '\0';
 
   // cout << "START " << len << " ###########################" << endl;
@@ -63,9 +64,9 @@ HttpRequest HttpRequest::parse(int fd) {
       headers.erase(headers.begin());
 
       return HttpRequest(method, request_uri, http_version, headers, content,
-                         len - (content - buffer));
+                         (size_t)(len - (content - buffer)));
     }
-    headers.push_back(string(curr, ptr - curr));
+    headers.push_back(string(curr, (size_t)(ptr - curr)));
     curr = ptr + 2;
   }
   cerr << "END OF BUFFER" << endl;
@@ -95,12 +96,12 @@ void HttpResponse::Send(int fd) {
   send(fd, buf.str().c_str(), buf.str().size(), 0);
 		printf("Start\n");
 
-int bufx = 1;		
+ssize_t bufx = 1;
   char buf1[4096*32];
 while (bufx > 0) {
   bufx = read(fd_data, buf1, 4096*32);
   // kjjprintf("%d %d %d\n", fd_data, fd, bufx);
-   int rv = send(fd, buf1, bufx, 0);
+   ssize_t rv = send(fd, buf1, (size_t)(bufx), 0);
   // printf("%d %d %d %d\n", fd_data, fd, bufx, rv);
   if (rv != bufx) { break; }
 }

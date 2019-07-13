@@ -22,7 +22,7 @@ public:
   HttpRequest(const std::string &method, const std::string &request_uri,
               const std::string &http_version,
               const std::vector<std::string> headers, const char *content,
-              const int content_length)
+              const size_t content_length)
       : method_(method), request_uri_(request_uri), http_version_(http_version),
         headers_(headers), content_(content, content_length) {}
 
@@ -45,7 +45,7 @@ public:
   std::string content;
   std::string type;
   int fd_data = -1;
-  int fd_length;
+  size_t fd_length;
 
   void SetHtmlContent(const std::string &contentx) {
     this->content = contentx;
@@ -72,7 +72,7 @@ public:
     this->type = typex;
   }
 
-  void SetContent(const std::string typex, int data_fd, int length) {
+  void SetContent(const std::string typex, int data_fd, size_t length) {
     this->type = typex;
     this->fd_data = data_fd;
     this->fd_length = length;
