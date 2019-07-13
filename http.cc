@@ -32,9 +32,14 @@ void HttpRequest::Print() const {
 }
 
 HttpRequest HttpRequest::parse(int fd) {
+  LOG_INFO("parsing HTTP request (fd: %d)", fd);
+
   char buffer[BUF_SIZE];
   ssize_t len = recv(fd, buffer, BUF_SIZE - 1, 0);
-  // TODO: We should verify it is not negative.
+  if (len < 0) {
+    LOG_WARNING("unable to recv request (fd: %d)", fd);
+    return HttpRequest();
+  }
   buffer[len] = '\0';
 
   // cout << "START " << len << " ###########################" << endl;
@@ -48,13 +53,15 @@ HttpRequest HttpRequest::parse(int fd) {
 
   while ((ptr = strstr(curr, "\r\n")) != NULL) {
     if (ptr - buffer > len) { // Exceeded buffer size.
-      cerr << "BUFFER OVERFLOW" << endl;
+      LOG_WARNING("buffer overflow (fd: %d)", fd);
       return HttpRequest();
     }
     if (ptr - curr == 0) { // End of header.
       content = ptr + 2;
-      if (headers.size() == 0)
+      if (headers.size() == 0) {
+        LOG_WARNING("empty request? (fd: %d)", fd);
         return HttpRequest();
+      }
 
       size_t l1 = headers[0].find_first_of(' ');
       string method(headers[0], 0, l1);
@@ -65,13 +72,17 @@ HttpRequest HttpRequest::parse(int fd) {
       string http_version(headers[0], l2 + 1);
       headers.erase(headers.begin());
 
+      size_t content_length = (size_t)(len - (content - buffer));
+
+      LOG_INFO("parsed HTTP request (fd: %d, %s:%s, len: %ld)", fd,
+               method.c_str(), request_uri.c_str(), content_length);
       return HttpRequest(method, request_uri, http_version, headers, content,
-                         (size_t)(len - (content - buffer)));
+                         content_length);
     }
     headers.push_back(string(curr, (size_t)(ptr - curr)));
     curr = ptr + 2;
   }
-  cerr << "END OF BUFFER" << endl;
+  LOG_WARNING("invalid request? (fd: %d)", fd);
   return HttpRequest();
 }
 
