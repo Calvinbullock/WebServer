@@ -6,9 +6,9 @@
 #include <string>
 
 // For send/recv
+#include <sys/sendfile.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <sys/sendfile.h>
 #include <unistd.h>
 
 #define BUF_SIZE 1024 * 16
@@ -74,42 +74,44 @@ HttpRequest HttpRequest::parse(int fd) {
 }
 
 void HttpResponse::Send(int fd) {
-		printf("FD DESCRIPTOR: %d\n", fd_data);
-	if (fd_data == -1) {
-  stringstream buf;
+  printf("FD DESCRIPTOR: %d\n", fd_data);
+  if (fd_data == -1) {
+    stringstream buf;
 
-  buf << "HTTP/1.0 200 OK\r\n";
-  buf << "Content-type:" << type << "\r\n";
-  buf << "Content-Length:" << content.size() << "\r\n";
-  buf << "\r\n";
-  buf << content;
+    buf << "HTTP/1.0 200 OK\r\n";
+    buf << "Content-type:" << type << "\r\n";
+    buf << "Content-Length:" << content.size() << "\r\n";
+    buf << "\r\n";
+    buf << content;
 
-  send(fd, buf.str().c_str(), buf.str().size(), 0);
-	} else {
-		printf("Start\n");
-  stringstream buf;
+    send(fd, buf.str().c_str(), buf.str().size(), 0);
+  } else {
+    printf("Start\n");
+    stringstream buf;
 
-  buf << "HTTP/1.0 200 OK\r\n";
-  buf << "Content-type:" << type << "\r\n";
-  buf << "Content-Length:" << fd_length << "\r\n";
-  buf << "\r\n";
-  send(fd, buf.str().c_str(), buf.str().size(), 0);
-		printf("Start\n");
+    buf << "HTTP/1.0 200 OK\r\n";
+    buf << "Content-type:" << type << "\r\n";
+    buf << "Content-Length:" << fd_length << "\r\n";
+    buf << "\r\n";
+    send(fd, buf.str().c_str(), buf.str().size(), 0);
+    printf("Start\n");
 
-ssize_t bufx = 1;
-  char buf1[4096*32];
-while (bufx > 0) {
-  bufx = read(fd_data, buf1, 4096*32);
-  // kjjprintf("%d %d %d\n", fd_data, fd, bufx);
-   ssize_t rv = send(fd, buf1, (size_t)(bufx), 0);
-  // printf("%d %d %d %d\n", fd_data, fd, bufx, rv);
-  if (rv != bufx) { break; }
-}
+    ssize_t bufx = 1;
+    char buf1[4096 * 32];
+    while (bufx > 0) {
+      bufx = read(fd_data, buf1, 4096 * 32);
+      // kjjprintf("%d %d %d\n", fd_data, fd, bufx);
+      ssize_t rv = send(fd, buf1, (size_t)(bufx), 0);
+      // printf("%d %d %d %d\n", fd_data, fd, bufx, rv);
+      if (rv != bufx) {
+        break;
+      }
+    }
 
-//sendfile(fd, fd_data, 0, fd_length);
-close(fd_data);
-		printf("End\n");
-	}
+    // sendfile(fd, fd_data, 0, fd_length);
+    close(fd_data);
+    printf("End\n");
+  }
 }
 
 } // namespace obsequi
