@@ -219,21 +219,24 @@ void serveFile(const HttpRequest &req, HttpResponse *resp, const string &type) {
 // EX this passes the file type to serveIndexHtml()
 string getMimeType(string path) {
   string img = ".jpg";
-  string vid = ".m4v";
+  string m4v = ".m4v";
   string html = ".html";
-  string vid2 = ".mp4";
+  string mp4 = ".mp4";
   string css = ".css";
 
   if (path.find(img) != std::string::npos) {
     return "image/jpg";
-  } else if (path.find(vid) != std::string::npos ||
-             path.find(vid) != std::string::npos) {
-    return "video/mp4";
   } else if (path.find(html) != std::string::npos) {
     return "text/html";
   } else if (path.find(css) != std::string::npos) {
     return "text/css";
+    // TODO mime testing below
+  } else if (path.find(m4v) != std::string::npos) {
+    return "video/x-m4v";
+  } else if (path.find(mp4) != std::string::npos) {
+    return "video/mp4";
   }
+
   return "text/plain";
 }
 
