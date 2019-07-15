@@ -80,7 +80,7 @@ HttpRequest HttpRequest::parse(int fd) {
                          content_length);
     }
     headers.push_back(string(curr, (size_t)(ptr - curr)));
-    cout << "header = " << headers[headers.size() - 1] << endl;
+    // cout << "header = " << headers[headers.size() - 1] << endl;
     curr = ptr + 2;
   }
   LOG_WARNING("invalid request? (fd: %d)", fd);

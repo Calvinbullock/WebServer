@@ -27,7 +27,7 @@ using namespace std;
 const string homeFilePath = ".";
 
 vector<string> getFileDirectory(string path);
-string creatRow(string path, string unK);
+string creatRow(string path, string name);
 
 /* -------------------------------- ------- -------------------------------- **
 -- -------------------------------- Methods -------------------------------- --
@@ -51,19 +51,19 @@ void everyFileVec(string path, vector<FileSort> *everyFile) {
 
   /* EX adds all the files and directories within directory to everyFile*/
   while ((ent = readdir(dir)) != NULL) {
-    string unK = string(ent->d_name); // what is this again?
-    fs::path p = FilePath(path + unK);
+    string fileName = string(ent->d_name);
+    fs::path p = FilePath(path + fileName);
     auto dSE = fs::last_write_time(p).time_since_epoch();
     printf("%s %ld\n", ent->d_name, dSE.count());
 
-    if (fs::is_directory(FilePath(path + unK))) {
+    if (fs::is_directory(FilePath(path + fileName))) {
       // EX "if" checks for the "." ".." so it dose not infa loop
-      if ((unK != ".") && (unK != "..")) {
-        everyFileVec(path + unK, everyFile);
+      if ((fileName != ".") && (fileName != "..")) {
+        everyFileVec(path + fileName, everyFile);
       }
     } else {
-      everyFile->push_back(
-          FileSort(dSE, "<tr>" + creatRow(path + unK, unK) + "</tr>"));
+      everyFile->push_back(FileSort(
+          dSE, "<tr>" + creatRow(path + fileName, fileName) + "</tr>"));
     }
   }
   closedir(dir);
@@ -132,7 +132,6 @@ string byteConversion(unsigned long size) {
   return to_string((int)size) + " " + units[unit];
 }
 
-// TODO unK = file name
 // TODO needs the last time a file was accsesed
 // EX returns the elements of a table row
 string creatRow(string webpath, string name) {
@@ -187,9 +186,10 @@ vector<string> getFileDirectory(string path) {
   /* EX print all the files and directories within directory */
   int i = 0;
   while ((ent = readdir(dir)) != NULL) {
-    string unK = string(ent->d_name); // what is this
+    string fileName = string(ent->d_name); // what is this
     // LOG_DEBUG("directory entry: %s", ent->d_name);
-    webContent.push_back("<tr>" + creatRow(path + unK, unK) + "</tr>");
+    webContent.push_back("<tr>" + creatRow(path + fileName, fileName) +
+                         "</tr>");
     i++;
   }
   closedir(dir);
@@ -199,8 +199,8 @@ vector<string> getFileDirectory(string path) {
 // EX serves the files
 void serveFile(const HttpRequest &req, HttpResponse *resp, const string &type) {
   string path = FilePath(req.request_uri_);
-
   int fd = open(path.c_str(), 0);
+
   if (fd == -1) {
     cout << "Unable to open file: " << path << endl;
     resp->SetHtmlContent("Invalid Request");
