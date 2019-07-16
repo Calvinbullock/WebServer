@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -x
+
+while true; do
+./build_server && ./build_and_run_tests
+
+inotifywait -rq -e modify,create,delete .
+done

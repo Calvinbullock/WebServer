@@ -1,7 +1,7 @@
 // Simple threaded AF_INET server.
 
-#ifndef OBSEQUI_SERVER_H
-#define OBSEQUI_SERVER_H
+#ifndef CALVIN_SERVER_H
+#define CALVIN_SERVER_H
 
 #include <arpa/inet.h>
 #include <condition_variable>
@@ -9,7 +9,7 @@
 #include <queue>
 #include <thread>
 
-namespace obsequi {
+namespace calvin {
 
 struct TcpConnection {
   int fd;
@@ -41,5 +41,5 @@ private:
   std::condition_variable notifier_;
 };
 
-} // namespace obsequi
-#endif // OBSEQUI_SERVER_H
+} // namespace calvin
+#endif // CALVIN_SERVER_H
