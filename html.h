@@ -33,7 +33,7 @@ const std::string HTML_HEAD = R"RAW(<!DOCTYPE html>
 const std::string HTML_TAIL = R"RAW(
           <!-- START OF FOOTER-->
           <tr class="low">
-            <th colspan="4">
+            <td colspan="4">
               <hr>
             </td>
           </tr>
@@ -43,13 +43,19 @@ const std::string HTML_TAIL = R"RAW(
             <td class="filesize">--</td>
             <td class="lastmodified">--</td>
           </tr>
+          <tr>
+            <td class="icon"> <img src="" alt="[DNE]" width="20"> </td>
+            <td class="mid"> <div id="search"> To search </div> Type "/search/<i class="low">filename</i>" into the url bar After "localhost:8080:"</td>
+            <td class="filesize"> -- </td>
+            <td class="lastmodified"> -- </td>
+          </tr>
         <tr class="low">
           <td colspan="4">
             <hr>
           </td>
         </tr>
       </table>
-      <div class="low">v0.7</div>
+      <div class="low">v0.8</div>
     </p>
   </body>
 

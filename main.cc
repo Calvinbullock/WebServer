@@ -88,11 +88,10 @@ string fileSearchSort(string searchTarget, string path) {
   string html;
 
   sort(searchFiles.begin(), searchFiles.end());
-  html = "<table>";
   for (size_t i = 0; i < searchFiles.size(); i++) {
     html += searchFiles[i];
   }
-  return html + "</table>";
+  return html;
 }
 
 // EX puts every file in a vetor with the date it was added
@@ -137,12 +136,10 @@ string everyFileSort(string path, int numOfRows) {
        [](const FileSort &a, const FileSort &b) {
          return a.getDate() > b.getDate();
        });
-  html = "<table>";
   for (size_t i = 0; i < numOfRows; i++) {
     html += everyFile[i].getRow();
   }
-
-  return html + "</table>";
+  return html;
 }
 
 // EX sorts the vector indexes that hold the rows & formats for HTML table
@@ -189,6 +186,7 @@ string byteConversion(unsigned long size) {
   return to_string((int)size) + " " + units[unit];
 }
 
+// TODO Clean up the icon picker and add an mp3 icon
 // TODO needs the last time a file was accsesed
 // EX returns the elements of a table row
 string creatRow(string webpath, string name) {
@@ -251,6 +249,35 @@ vector<string> getFileDirectory(string path) {
   }
   closedir(dir);
   return webContent;
+}
+
+// TODO finish this func
+// EX finds the byte range
+void byteRange(vector<string> headers) {
+  // void byteRange(const HttpRequest &req) {
+  int range[2];
+  string target;
+  unsigned long targetNumS;
+  unsigned long targetNumE;
+  for (unsigned long i = 0; i < headers.size(); i++) {
+    if (headers[i].find("Range") != std::string::npos) {
+      target = headers[i];
+    }
+  }
+  if (target.length() > 1) {
+    for (unsigned long i = 0; i < target.length(); i++) {
+      if (target[i] == '=') {
+        targetNumS = i;
+      } else if (target[i] == '-') {
+        targetNumE = i;
+      }
+    }
+    range[0] = atoi(target.c_str() + targetNumS + 1);
+    range[1] = atoi(target.c_str() + targetNumE + 1);
+    cout << "startNum = " << range[0] << endl;
+    cout << "endNum = " << range[1] << endl;
+  }
+  // return range[];
 }
 
 // EX serves the files
