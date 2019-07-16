@@ -80,6 +80,7 @@ HttpRequest HttpRequest::parse(int fd) {
                          content_length);
     }
     headers.push_back(string(curr, (size_t)(ptr - curr)));
+    // cout << "header = " << headers[headers.size() - 1] << endl;
     curr = ptr + 2;
   }
   LOG_WARNING("invalid request? (fd: %d)", fd);
@@ -96,6 +97,8 @@ void HttpResponse::Send(int fd) {
     buf << "HTTP/1.0 200 OK\r\n";
     buf << "Content-type:" << type << "\r\n";
     buf << "Content-Length:" << content.size() << "\r\n";
+    buf << "Accept-Ranges: bytes"
+        << "\r\n";
     buf << "\r\n";
     buf << content;
 
@@ -108,6 +111,8 @@ void HttpResponse::Send(int fd) {
     buf << "HTTP/1.0 200 OK\r\n";
     buf << "Content-type:" << type << "\r\n";
     buf << "Content-Length:" << fd_length << "\r\n";
+    buf << "Accept-Ranges: bytes"
+        << "\r\n";
     buf << "\r\n";
     send(fd, buf.str().c_str(), buf.str().size(), 0);
 

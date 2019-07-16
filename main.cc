@@ -10,6 +10,7 @@
 #include <experimental/filesystem>
 #include <fstream>
 #include <iostream>
+#include <locale>
 #include <memory>
 #include <vector>
 
@@ -26,7 +27,7 @@ using namespace std;
 const string homeFilePath = ".";
 
 vector<string> getFileDirectory(string path);
-string creatRow(string path, string unK);
+string creatRow(string path, string name);
 
 /* -------------------------------- ------- -------------------------------- **
 -- -------------------------------- Methods -------------------------------- --
@@ -41,6 +42,64 @@ struct FileSort {
 };
 
 // TODO find a better func name
+// EX converts a string to lower case
+string toLower(string str) {
+  for (unsigned long i = 0; i < str.length(); i++) {
+    str[i] = (char)tolower(str[i]);
+  }
+  return str;
+}
+
+// EX recurses through each directery looking for file names that match target
+void search(string searchTarget, string path, vector<string> *searchedFiles) {
+  path += "/";
+  DIR *dir;
+
+  struct dirent *ent;
+  // EX checks if directery is open
+  if ((dir = opendir(FilePath(path).c_str())) == NULL) {
+    perror("");
+    return;
+  }
+
+  // EX adds all the files and directories within directory to everyFile
+  while ((ent = readdir(dir)) != NULL) {
+    string fileName = string(ent->d_name);
+    fs::path p = FilePath(path + fileName);
+
+    if (fs::is_directory(FilePath(path + fileName))) {
+      // EX "if" checks for the "." ".." so it dose not infa loop
+      if ((fileName != ".") && (fileName != "..")) {
+        search(searchTarget, path + fileName, searchedFiles);
+      }
+    } else if (toLower(FilePath(path + fileName)).find(toLower(searchTarget)) !=
+               std::string::npos) {
+      searchedFiles->push_back("<tr>" + creatRow(path + fileName, fileName) +
+                               "</tr>");
+    }
+  }
+  closedir(dir);
+}
+
+// EX sorts the searched files
+string fileSearchSort(string searchTarget, string path) {
+  if (searchTarget.length() < 7) {
+    return " <tr><td> No results </td></tr>";
+  }
+  vector<string> searchFiles;
+  // EX the 6 came from the keyword that is being looked for "/search"
+  searchTarget = searchTarget.substr(7, searchTarget.length() - 6);
+  search(searchTarget, "", &searchFiles);
+  string html;
+
+  sort(searchFiles.begin(), searchFiles.end());
+  html = "<table>";
+  for (size_t i = 0; i < searchFiles.size(); i++) {
+    html += searchFiles[i];
+  }
+  return html + "</table>";
+}
+
 // EX puts every file in a vetor with the date it was added
 void everyFileVec(string path, vector<FileSort> *everyFile) {
   path += "/";
@@ -55,19 +114,19 @@ void everyFileVec(string path, vector<FileSort> *everyFile) {
 
   /* EX adds all the files and directories within directory to everyFile*/
   while ((ent = readdir(dir)) != NULL) {
-    string unK = string(ent->d_name); // what is this again?
-    fs::path p = FilePath(path + unK);
+    string fileName = string(ent->d_name);
+    fs::path p = FilePath(path + fileName);
     auto dSE = fs::last_write_time(p).time_since_epoch();
     printf("%s %ld\n", ent->d_name, dSE.count());
 
-    if (fs::is_directory(FilePath(path + unK))) {
+    if (fs::is_directory(FilePath(path + fileName))) {
       // EX "if" checks for the "." ".." so it dose not infa loop
-      if ((unK != ".") && (unK != "..")) {
-        everyFileVec(path + unK, everyFile);
+      if ((fileName != ".") && (fileName != "..")) {
+        everyFileVec(path + fileName, everyFile);
       }
     } else {
       everyFile->push_back(
-          FileSort{dSE, "<tr>" + creatRow(path + unK, unK) + "</tr>"});
+          FileSort{dSE, "<tr>" + creatRow(path + filename, filename) + "</tr>"});
     }
   }
   closedir(dir);
@@ -98,7 +157,7 @@ string webContentSort(string path) {
 
   sort(webContent.begin(), webContent.end());
   for (size_t i = 0; i < webContent.size(); i++) {
-    // TODO should this if move to vec creation to eliminate to itterations?
+    // TODO should this "if" move to vec creation to eliminate to itterations?
     if (webContent[i].find("./") != std::string::npos ||
         webContent[i].find("..") != std::string::npos) {
       webContent[i].erase(i);
@@ -123,7 +182,7 @@ string htmlFormat(string tableRows) {
   return HTML_HEAD + tableRows + HTML_TAIL;
 }
 
-// converts bytes to needed unit
+// EX converts bytes to needed unit
 string byteConversion(unsigned long size) {
   int unit = 0;
   string units[] = {"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
@@ -132,11 +191,9 @@ string byteConversion(unsigned long size) {
     size /= 1024;
     ++unit;
   }
-  // cout << "befor:" << size << endl;
   return to_string((int)size) + " " + units[unit];
 }
 
-// TODO unK = file name
 // TODO needs the last time a file was accsesed
 // EX returns the elements of a table row
 string creatRow(string webpath, string name) {
@@ -145,7 +202,7 @@ string creatRow(string webpath, string name) {
   string filepath = FilePath(webpath);
   fs::path p = filepath;
   auto ftime = fs::last_write_time(p);
-  // assuming system_clock
+  // EX assuming system_clock
   std::time_t cftime = decltype(ftime)::clock::to_time_t(ftime);
   char timeB[80];
   strftime(timeB, 80, "%b/%d/%y", std::localtime(&cftime));
@@ -191,9 +248,10 @@ vector<string> getFileDirectory(string path) {
   /* EX print all the files and directories within directory */
   int i = 0;
   while ((ent = readdir(dir)) != NULL) {
-    string unK = string(ent->d_name); // what is this
+    string fileName = string(ent->d_name); // what is this
     // LOG_DEBUG("directory entry: %s", ent->d_name);
-    webContent.push_back("<tr>" + creatRow(path + unK, unK) + "</tr>");
+    webContent.push_back("<tr>" + creatRow(path + fileName, fileName) +
+                         "</tr>");
     i++;
   }
   closedir(dir);
@@ -203,8 +261,8 @@ vector<string> getFileDirectory(string path) {
 // EX serves the files
 void serveFile(const HttpRequest &req, HttpResponse *resp, const string &type) {
   string path = FilePath(req.request_uri_);
-
   int fd = open(path.c_str(), 0);
+
   if (fd == -1) {
     cout << "Unable to open file: " << path << endl;
     resp->SetHtmlContent("Invalid Request");
@@ -223,21 +281,24 @@ void serveFile(const HttpRequest &req, HttpResponse *resp, const string &type) {
 // EX this passes the file type to serveIndexHtml()
 string getMimeType(string path) {
   string img = ".jpg";
-  string vid = ".m4v";
+  string m4v = ".m4v";
   string html = ".html";
-  string vid2 = ".mp4";
+  string mp4 = ".mp4";
   string css = ".css";
 
   if (path.find(img) != std::string::npos) {
     return "image/jpg";
-  } else if (path.find(vid) != std::string::npos ||
-             path.find(vid) != std::string::npos) {
-    return "video/mp4";
   } else if (path.find(html) != std::string::npos) {
     return "text/html";
   } else if (path.find(css) != std::string::npos) {
     return "text/css";
+    // TODO mime testing below
+  } else if (path.find(m4v) != std::string::npos) {
+    return "video/x-m4v";
+  } else if (path.find(mp4) != std::string::npos) {
+    return "video/mp4";
   }
+
   return "text/plain";
 }
 
@@ -255,7 +316,10 @@ void handle(const TcpConnection &conn) {
   if (req.request_uri_ == "/stop") {
     exit(1);
   }
-  if (req.request_uri_ == "/recent") {
+  if (req.request_uri_.substr(0, 7) == "/search") {
+    resp.SetHtmlContent(
+        htmlFormat(fileSearchSort(req.request_uri_, homeFilePath)));
+  } else if (req.request_uri_ == "/recent") {
     resp.SetHtmlContent(htmlFormat(everyFileSort(homeFilePath, 50)));
   } else {
     string path = FilePath(req.request_uri_);
@@ -269,6 +333,7 @@ void handle(const TcpConnection &conn) {
   resp.Send(conn.fd);
 }
 
+#if 1
 int main(int argc, char *argv[]) {
   int port = 8000;
   if (argc > 1) {
@@ -280,6 +345,20 @@ int main(int argc, char *argv[]) {
   }
   TcpServer server(handle);
   server.Run((uint16_t)port, 20);
-  // cout << everyFileSort("/home/calvin/Desktop/Code", 5) << endl; // debug
   return 0;
 }
+
+#elif 0
+
+// testing stuff
+bool test(const TcpConnection &conn) {
+  // test
+  return true;
+}
+
+int main(int argc, char *argv[]) {
+  // test(byteRange(), 2);
+  cout << fileSearchSort("/search/bug") << endl;
+}
+
+#endif
