@@ -3,4 +3,4 @@
 set -x
 
 clang++ -std=c++14 -Wall -Werror -Wshadow -Wconversion \
-    -g -pthread http.cc server.cc main.cc -lstdc++fs -o server
+    -g -pthread http.cc server.cc main.cc -lstdc++fs -o testServer
