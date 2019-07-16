@@ -1,6 +1,9 @@
 // HttpRequest/HttpResponse classes
 // TODO: Basically everything needs to be fixed.  :-)
 
+#ifndef CALVIN_HTTP_H_
+#define CALVIN_HTTP_H_
+
 #include "server.h"
 #include <cstring>
 #include <iostream>
@@ -13,7 +16,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-namespace obsequi {
+namespace calvin {
 
 // TODO: This class is really ugly at this point. Just don't even look.
 class HttpRequest {
@@ -59,4 +62,6 @@ public:
   void Send(int fd);
 };
 
-} // namespace obsequi
+} // namespace calvin
+
+#endif // CALVIN_HTTP_H_

@@ -17,7 +17,7 @@
 
 using namespace std;
 
-namespace obsequi {
+namespace calvin {
 
 void HttpRequest::Print() const {
   cout << "##### HEADER #######" << endl;
@@ -125,4 +125,4 @@ void HttpResponse::Send(int fd) {
   }
 }
 
-} // namespace obsequi
+} // namespace calvin

@@ -11,7 +11,7 @@
 
 #define PENDING_CONNECTIONS 20
 
-namespace obsequi {
+namespace calvin {
 
 TcpServer::TcpServer(ConnectionHandler handler)
     : handler_(handler), queue_(), mutex_(), notifier_() {}
@@ -91,4 +91,4 @@ TcpConnection TcpServer::Dequeue() {
   return ret;
 }
 
-} // namespace obsequi
+} // namespace calvin

@@ -13,7 +13,6 @@
 #include <memory>
 #include <vector>
 
-#include "FileSortTools.cpp"
 #include "html.h"
 #include "http.h"
 #include "log.h"
@@ -21,7 +20,7 @@
 
 namespace fs = std::experimental::filesystem;
 #define BUF_SIZE 1024 * 1024
-using namespace obsequi;
+using namespace calvin;
 using namespace std;
 
 const string homeFilePath = ".";
@@ -35,6 +34,11 @@ string creatRow(string path, string unK);
 ** -------------------------------- ------- -------------------------------- */
 
 string FilePath(const string &path) { return homeFilePath + path; }
+
+struct FileSort {
+  std::chrono::nanoseconds date_created;
+  string row;
+};
 
 // TODO find a better func name
 // EX puts every file in a vetor with the date it was added
@@ -63,7 +67,7 @@ void everyFileVec(string path, vector<FileSort> *everyFile) {
       }
     } else {
       everyFile->push_back(
-          FileSort(dSE, "<tr>" + creatRow(path + unK, unK) + "</tr>"));
+          FileSort{dSE, "<tr>" + creatRow(path + unK, unK) + "</tr>"});
     }
   }
   closedir(dir);
@@ -77,11 +81,11 @@ string everyFileSort(string path, int numOfRows) {
 
   sort(everyFile.begin(), everyFile.end(),
        [](const FileSort &a, const FileSort &b) {
-         return a.getDate() > b.getDate();
+         return a.date_created > b.date_created;
        });
   html = "<table>";
   for (size_t i = 0; i < numOfRows; i++) {
-    html += everyFile[i].getRow();
+    html += everyFile[i].row;
   }
 
   return html + "</table>";
