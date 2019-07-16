@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -xe
+
+g++ example_test.cc \
+    -L$HOME/lib/ -lgtest -lgtest_main -lpthread -I$HOME/include/ \
+    -o tests/x1
+
+./tests/x1
