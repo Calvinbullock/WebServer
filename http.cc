@@ -1,14 +1,12 @@
 #include "http.h"
 
+#include <cstring>
 #include <iostream>
 #include <sstream>
-#include <string.h>
 #include <string>
 
 // For send/recv
-#include <sys/sendfile.h>
 #include <sys/socket.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include "log.h"
@@ -42,10 +40,6 @@ HttpRequest HttpRequest::ParseRequest(int fd, HttpRequest::RecvFunc *recv) {
   }
   buffer[len] = '\0';
 
-  // cout << "START " << len << " ###########################" << endl;
-  // cout << string(buffer, len) << endl;
-  // cout << "END   ################################" << endl;
-
   const char *ptr;
   const char *curr = buffer;
   const char *content = NULL;
@@ -74,8 +68,9 @@ HttpRequest HttpRequest::ParseRequest(int fd, HttpRequest::RecvFunc *recv) {
 
       size_t content_length = (size_t)(len - (content - buffer));
 
-      LOG_INFO("parsed HTTP request (fd: %d, %s:%s, len: %ld)", fd,
-               method.c_str(), request_uri.c_str(), content_length);
+      LOG_INFO("parsed HTTP request (fd: %d, %s:%s:%s, len: %ld)", fd,
+               method.c_str(), request_uri.c_str(), http_version.c_str(),
+               content_length);
       return HttpRequest(method, request_uri, http_version, headers, content,
                          content_length);
     }

@@ -1,20 +1,10 @@
 // HttpRequest/HttpResponse classes
-// TODO: Basically everything needs to be fixed.  :-)
 
 #ifndef CALVIN_HTTP_H_
 #define CALVIN_HTTP_H_
 
-#include "server.h"
-#include <cstring>
-#include <iostream>
-#include <queue>
-#include <sstream>
 #include <string>
-#include <thread>
 #include <vector>
-
-#include <sys/socket.h>
-#include <sys/types.h>
 
 namespace calvin {
 

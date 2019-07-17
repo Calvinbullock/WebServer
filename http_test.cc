@@ -1,10 +1,12 @@
 // What we are testing
 #include "http.h"
 
-#include "gtest/gtest.h"
 #include <cstdio>
 #include <fstream>
 #include <iostream>
+
+#include "log.h"
+#include "gtest/gtest.h"
 
 using namespace std;
 
@@ -32,7 +34,7 @@ TEST(HttpTest, test1_success) {
                             "User-Agent: curl/7.52.1\r\n"
                             "Accept: */*\r\n"
                             "\r\n",
-                            "/tmp/httptest_test1");
+                            "/tmp/httptest_" FILE_AND_LINE);
 
   auto r = calvin::HttpRequest::ParseRequest(
       fileno(fd),
@@ -56,7 +58,7 @@ TEST(HttpTest, test2_success) {
       "Accept-Encoding: gzip, deflate\r\n"
       "Connection: Keep-Alive\r\n"
       "\r\n",
-      "/tmp/httptest_test2");
+      "/tmp/httptest_" FILE_AND_LINE);
   auto r = calvin::HttpRequest::ParseRequest(
       fileno(fd),
       [](int fd, void *d, size_t bytes, int) { return read(fd, d, bytes); });
@@ -70,5 +72,24 @@ TEST(HttpTest, test2_success) {
             r.Headers());
   EXPECT_EQ("", r.Content());
   fclose(fd);
-  ofstream out_file;
+}
+
+TEST(HttpTest, EmptyRequest_Fail) {
+  const auto vec = std::vector<std::string>{
+      "",
+      "\r\n",
+      "\r\n\r\n",
+      "asdfasdfasdfasdfasdfasdf",
+      "\r\nasdfasdfasdf",
+      "\r\n\r\n",
+  };
+  for (auto str : vec) {
+    auto *fd = GetFileForTest(str.c_str(), "/tmp/httptest_" FILE_AND_LINE);
+    auto r = calvin::HttpRequest::ParseRequest(
+        fileno(fd),
+        [](int fd, void *d, size_t bytes, int) { return read(fd, d, bytes); });
+
+    EXPECT_EQ("", r.Method());
+    fclose(fd);
+  }
 }
