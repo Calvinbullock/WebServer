@@ -4,9 +4,6 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-
-// For send/recv
-#include <sys/socket.h>
 #include <unistd.h>
 
 #include "log.h"
@@ -82,46 +79,44 @@ HttpRequest HttpRequest::ParseRequest(int fd, HttpRequest::RecvFunc *recv) {
   return HttpRequest();
 }
 
-void HttpResponse::Send(int fd) {
-  if (fd_data == -1) {
-    LOG_INFO("sending response, MIME: %s, length: %lu", type.c_str(),
-             content.size());
+void HttpResponse::SendHtmlResponse(const std::string &contentx) {
+  auto typex = "text/html";
 
-    stringstream buf;
+  LOG_INFO("sending response, MIME: %s, length: %lu", typex, contentx.size());
 
-    buf << "HTTP/1.0 200 OK\r\n";
-    buf << "Content-type:" << type << "\r\n";
-    buf << "Content-Length:" << content.size() << "\r\n";
-    buf << "Accept-Ranges: bytes"
-        << "\r\n";
-    buf << "\r\n";
-    buf << content;
+  stringstream buf;
+  buf << "HTTP/1.0 200 OK\r\n";
+  buf << "Content-type:" << typex << "\r\n";
+  buf << "Content-Length:" << contentx.size() << "\r\n";
+  buf << "Accept-Ranges: bytes"
+      << "\r\n";
+  buf << "\r\n";
+  buf << contentx;
 
-    send(fd, buf.str().c_str(), buf.str().size(), 0);
-  } else {
-    LOG_INFO("sending response, MIME: %s, length: %lu, fd: %d", type.c_str(),
-             fd_length, fd_data);
-    stringstream buf;
+  send_(fd_, buf.str().c_str(), buf.str().size(), 0);
+}
 
-    buf << "HTTP/1.0 200 OK\r\n";
-    buf << "Content-type:" << type << "\r\n";
-    buf << "Content-Length:" << fd_length << "\r\n";
-    buf << "Accept-Ranges: bytes"
-        << "\r\n";
-    buf << "\r\n";
-    send(fd, buf.str().c_str(), buf.str().size(), 0);
+void HttpResponse::SendResponse(const std::string type, int fd, size_t length) {
+  LOG_INFO("sending response, MIME: %s, length: %lu, fd: %d", type.c_str(),
+           length, fd);
+  stringstream buf;
 
-    ssize_t bufx = 1;
-    char buf1[4096 * 32];
-    while (bufx > 0) {
-      bufx = read(fd_data, buf1, 4096 * 32);
-      ssize_t rv = send(fd, buf1, (size_t)(bufx), 0);
-      if (rv != bufx) {
-        break;
-      }
+  buf << "HTTP/1.0 200 OK\r\n";
+  buf << "Content-type:" << type << "\r\n";
+  buf << "Content-Length:" << length << "\r\n";
+  buf << "Accept-Ranges: bytes"
+      << "\r\n";
+  buf << "\r\n";
+  send_(fd, buf.str().c_str(), buf.str().size(), 0);
+
+  ssize_t bufx = 1;
+  char buf1[4096 * 32];
+  while (bufx > 0) {
+    bufx = read(fd, buf1, 4096 * 32);
+    ssize_t rv = send_(fd_, buf1, (size_t)(bufx), 0);
+    if (rv != bufx) {
+      break;
     }
-
-    close(fd_data);
   }
 }
 

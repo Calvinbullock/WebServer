@@ -42,23 +42,16 @@ private:
 // TODO: This class is really ugly at this point. Just don't even look.
 class HttpResponse {
 public:
-  std::string content;
-  std::string type;
-  int fd_data = -1;
-  size_t fd_length;
+  typedef ssize_t SendFunc(int sockfd, const void *buf, size_t len, int flags);
 
-  void SetHtmlContent(const std::string &contentx) {
-    this->content = contentx;
-    this->type = "text/html";
-  }
+  HttpResponse(int fd, SendFunc *send) : fd_(fd), send_(send) {}
 
-  void SetContent(const std::string typex, int data_fd, size_t length) {
-    this->type = typex;
-    this->fd_data = data_fd;
-    this->fd_length = length;
-  }
+  void SendResponse(const std::string type, int data_fd, size_t length);
+  void SendHtmlResponse(const std::string &content);
 
-  void Send(int fd);
+private:
+  const int fd_;
+  SendFunc *send_;
 };
 
 } // namespace calvin

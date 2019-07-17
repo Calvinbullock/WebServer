@@ -265,7 +265,7 @@ void serveFile(const HttpRequest &req, HttpResponse *resp, const string &type) {
 
   if (fd == -1) {
     cout << "Unable to open file: " << path << endl;
-    resp->SetHtmlContent("Invalid Request");
+    resp->SendHtmlResponse("Invalid Request");
     return;
   }
 
@@ -275,7 +275,7 @@ void serveFile(const HttpRequest &req, HttpResponse *resp, const string &type) {
   // EX debug for lseek
   cout << file_size << ": " << err << ": " << endl;
 
-  resp->SetContent(type, fd, (size_t)file_size);
+  resp->SendResponse(type, fd, (size_t)file_size);
 }
 
 // EX this passes the file type to serveIndexHtml()
@@ -305,7 +305,7 @@ string getMimeType(string path) {
 // EX The function we want to make the thread run.
 void handle(const TcpConnection &conn) {
   HttpRequest req = HttpRequest::ParseRequest(conn.fd, recv);
-  HttpResponse resp;
+  HttpResponse resp(conn.fd, send);
 
   LOG_INFO("%s request for \"%s\"", req.Method().c_str(),
            req.RequestUri().c_str());
@@ -317,20 +317,18 @@ void handle(const TcpConnection &conn) {
     exit(1);
   }
   if (req.RequestUri().substr(0, 7) == "/search") {
-    resp.SetHtmlContent(
+    resp.SendHtmlResponse(
         htmlFormat(fileSearchSort(req.RequestUri(), homeFilePath)));
   } else if (req.RequestUri() == "/recent") {
-    resp.SetHtmlContent(htmlFormat(everyFileSort(homeFilePath, 50)));
+    resp.SendHtmlResponse(htmlFormat(everyFileSort(homeFilePath, 50)));
   } else {
     string path = FilePath(req.RequestUri());
     if (fs::is_directory(path)) {
-      resp.SetHtmlContent(htmlFormat(webContentSort(req.RequestUri())));
+      resp.SendHtmlResponse(htmlFormat(webContentSort(req.RequestUri())));
     } else {
       serveFile(req, &resp, getMimeType(path));
     }
   }
-
-  resp.Send(conn.fd);
 }
 
 #if 1
