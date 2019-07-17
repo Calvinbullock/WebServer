@@ -125,8 +125,8 @@ void everyFileVec(string path, vector<FileSort> *everyFile) {
         everyFileVec(path + fileName, everyFile);
       }
     } else {
-      everyFile->push_back(
-          FileSort{dSE, "<tr>" + creatRow(path + filename, filename) + "</tr>"});
+      everyFile->push_back(FileSort{
+          dSE, "<tr>" + creatRow(path + fileName, fileName) + "</tr>"});
     }
   }
   closedir(dir);
@@ -260,7 +260,7 @@ vector<string> getFileDirectory(string path) {
 
 // EX serves the files
 void serveFile(const HttpRequest &req, HttpResponse *resp, const string &type) {
-  string path = FilePath(req.request_uri_);
+  string path = FilePath(req.RequestUri());
   int fd = open(path.c_str(), 0);
 
   if (fd == -1) {
@@ -304,27 +304,27 @@ string getMimeType(string path) {
 
 // EX The function we want to make the thread run.
 void handle(const TcpConnection &conn) {
-  HttpRequest req = HttpRequest::parse(conn.fd);
+  HttpRequest req = HttpRequest::ParseRequest(conn.fd, recv);
   HttpResponse resp;
 
-  LOG_INFO("%s request for \"%s\"", req.method_.c_str(),
-           req.request_uri_.c_str());
+  LOG_INFO("%s request for \"%s\"", req.Method().c_str(),
+           req.RequestUri().c_str());
   // TODO helps with handling brkn requets
-  if (req.method_ == "") {
+  if (req.Method() == "") {
     return;
   }
-  if (req.request_uri_ == "/stop") {
+  if (req.RequestUri() == "/stop") {
     exit(1);
   }
-  if (req.request_uri_.substr(0, 7) == "/search") {
+  if (req.RequestUri().substr(0, 7) == "/search") {
     resp.SetHtmlContent(
-        htmlFormat(fileSearchSort(req.request_uri_, homeFilePath)));
-  } else if (req.request_uri_ == "/recent") {
+        htmlFormat(fileSearchSort(req.RequestUri(), homeFilePath)));
+  } else if (req.RequestUri() == "/recent") {
     resp.SetHtmlContent(htmlFormat(everyFileSort(homeFilePath, 50)));
   } else {
-    string path = FilePath(req.request_uri_);
+    string path = FilePath(req.RequestUri());
     if (fs::is_directory(path)) {
-      resp.SetHtmlContent(htmlFormat(webContentSort(req.request_uri_)));
+      resp.SetHtmlContent(htmlFormat(webContentSort(req.RequestUri())));
     } else {
       serveFile(req, &resp, getMimeType(path));
     }

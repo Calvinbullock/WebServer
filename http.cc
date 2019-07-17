@@ -31,7 +31,7 @@ void HttpRequest::Print() const {
   cout << "##### END #######" << endl;
 }
 
-HttpRequest HttpRequest::parse(int fd) {
+HttpRequest HttpRequest::ParseRequest(int fd, HttpRequest::RecvFunc *recv) {
   LOG_INFO("parsing HTTP request (fd: %d)", fd);
 
   char buffer[BUF_SIZE];
