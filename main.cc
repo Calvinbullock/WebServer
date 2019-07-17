@@ -12,6 +12,7 @@
 #include <iostream>
 #include <locale>
 #include <memory>
+#include <regex>
 #include <vector>
 
 #include "html.h"
@@ -53,6 +54,7 @@ string toLower(string str) {
 void search(string searchTarget, string path, vector<string> *searchedFiles) {
   path += "/";
   DIR *dir;
+  std::regex e(searchTarget); // MODing
 
   struct dirent *ent;
   // EX checks if directery is open
@@ -71,17 +73,18 @@ void search(string searchTarget, string path, vector<string> *searchedFiles) {
       if ((fileName != ".") && (fileName != "..")) {
         search(searchTarget, path + fileName, searchedFiles);
       }
-    } else if (toLower(FilePath(path + fileName)).find(toLower(searchTarget)) !=
-               std::string::npos) {
+    } else if (regex_search(fileName, e)) {
+      /*} else if (toLower(FilePath(path +
+         fileName)).find(toLower(searchTarget)) != std::string::npos) { */ // modifi this peace
       searchedFiles->push_back("<tr>" + creatRow(path + fileName, fileName) +
                                "</tr>");
     }
   }
   closedir(dir);
 }
-
+// TODO remove path
 // EX sorts the searched files
-string fileSearchSort(string searchTarget, string path) {
+string fileSearchSort(string searchTarget) {
   if (searchTarget.length() < 7) {
     return " <tr><td> No results </td></tr>";
   }
@@ -346,8 +349,7 @@ void handle(const TcpConnection &conn) {
     exit(1);
   }
   if (req.request_uri_.substr(0, 7) == "/search") {
-    resp.SetHtmlContent(
-        htmlFormat(fileSearchSort(req.request_uri_, homeFilePath)));
+    resp.SetHtmlContent(htmlFormat(fileSearchSort(req.request_uri_)));
   } else if (req.request_uri_ == "/recent") {
     resp.SetHtmlContent(htmlFormat(everyFileSort(homeFilePath, 50)));
   } else {
