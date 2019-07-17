@@ -3,6 +3,7 @@
 #ifndef CALVIN_HTTP_H_
 #define CALVIN_HTTP_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -12,9 +13,8 @@ class HttpRequest {
 public:
   typedef ssize_t RecvFunc(int sockfd, void *buf, size_t len, int flags);
 
-  // Use this to parse an http request, if it returns an empty HttpRequest
-  // there was an error during parsing..
-  static HttpRequest ParseRequest(int fd, RecvFunc *recv);
+  // This parses an HTTP request, returns a nullptr if there is an error.
+  static std::unique_ptr<HttpRequest> ParseRequest(int fd, RecvFunc *recv);
 
   void Print() const;
 
@@ -24,13 +24,14 @@ public:
   const std::string &Content() const { return content_; }
 
 private:
-  HttpRequest() {}
   HttpRequest(const std::string &method, const std::string &request_uri,
               const std::string &http_version,
               const std::vector<std::string> headers, const char *content,
               const size_t content_length)
       : method_(method), request_uri_(request_uri), http_version_(http_version),
         headers_(headers), content_(content, content_length) {}
+  HttpRequest(const HttpRequest &) = delete; // non construction-copyable
+  HttpRequest &operator=(const HttpRequest &) = delete; // non copyable
 
   const std::string method_;
   const std::string request_uri_;
@@ -39,7 +40,6 @@ private:
   const std::string content_;
 };
 
-// TODO: This class is really ugly at this point. Just don't even look.
 class HttpResponse {
 public:
   typedef ssize_t SendFunc(int sockfd, const void *buf, size_t len, int flags);

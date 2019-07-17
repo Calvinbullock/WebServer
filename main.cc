@@ -259,8 +259,8 @@ vector<string> getFileDirectory(string path) {
 }
 
 // EX serves the files
-void serveFile(const HttpRequest &req, HttpResponse *resp, const string &type) {
-  string path = FilePath(req.RequestUri());
+void serveFile(const HttpRequest *req, HttpResponse *resp, const string &type) {
+  string path = FilePath(req->RequestUri());
   int fd = open(path.c_str(), 0);
 
   if (fd == -1) {
@@ -304,29 +304,29 @@ string getMimeType(string path) {
 
 // EX The function we want to make the thread run.
 void handle(const TcpConnection &conn) {
-  HttpRequest req = HttpRequest::ParseRequest(conn.fd, recv);
+  auto req = HttpRequest::ParseRequest(conn.fd, recv);
   HttpResponse resp(conn.fd, send);
 
-  LOG_INFO("%s request for \"%s\"", req.Method().c_str(),
-           req.RequestUri().c_str());
+  LOG_INFO("%s request for \"%s\"", req->Method().c_str(),
+           req->RequestUri().c_str());
   // TODO helps with handling brkn requets
-  if (req.Method() == "") {
+  if (req->Method() == "") {
     return;
   }
-  if (req.RequestUri() == "/stop") {
+  if (req->RequestUri() == "/stop") {
     exit(1);
   }
-  if (req.RequestUri().substr(0, 7) == "/search") {
+  if (req->RequestUri().substr(0, 7) == "/search") {
     resp.SendHtmlResponse(
-        htmlFormat(fileSearchSort(req.RequestUri(), homeFilePath)));
-  } else if (req.RequestUri() == "/recent") {
+        htmlFormat(fileSearchSort(req->RequestUri(), homeFilePath)));
+  } else if (req->RequestUri() == "/recent") {
     resp.SendHtmlResponse(htmlFormat(everyFileSort(homeFilePath, 50)));
   } else {
-    string path = FilePath(req.RequestUri());
+    string path = FilePath(req->RequestUri());
     if (fs::is_directory(path)) {
-      resp.SendHtmlResponse(htmlFormat(webContentSort(req.RequestUri())));
+      resp.SendHtmlResponse(htmlFormat(webContentSort(req->RequestUri())));
     } else {
-      serveFile(req, &resp, getMimeType(path));
+      serveFile(req.get(), &resp, getMimeType(path));
     }
   }
 }

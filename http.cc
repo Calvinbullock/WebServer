@@ -26,14 +26,15 @@ void HttpRequest::Print() const {
   cout << "##### END #######" << endl;
 }
 
-HttpRequest HttpRequest::ParseRequest(int fd, HttpRequest::RecvFunc *recv) {
+unique_ptr<HttpRequest> HttpRequest::ParseRequest(int fd,
+                                                  HttpRequest::RecvFunc *recv) {
   LOG_INFO("parsing HTTP request (fd: %d)", fd);
 
   char buffer[BUF_SIZE];
   ssize_t len = recv(fd, buffer, BUF_SIZE - 1, 0);
   if (len < 0) {
     LOG_WARNING("unable to recv request (fd: %d)", fd);
-    return HttpRequest();
+    return unique_ptr<HttpRequest>(nullptr);
   }
   buffer[len] = '\0';
 
@@ -45,13 +46,13 @@ HttpRequest HttpRequest::ParseRequest(int fd, HttpRequest::RecvFunc *recv) {
   while ((ptr = strstr(curr, "\r\n")) != NULL) {
     if (ptr - buffer > len) { // Exceeded buffer size.
       LOG_WARNING("buffer overflow (fd: %d)", fd);
-      return HttpRequest();
+      return unique_ptr<HttpRequest>(nullptr);
     }
     if (ptr - curr == 0) { // End of header.
       content = ptr + 2;
       if (headers.size() == 0) {
         LOG_WARNING("empty request? (fd: %d)", fd);
-        return HttpRequest();
+        return unique_ptr<HttpRequest>(nullptr);
       }
 
       size_t l1 = headers[0].find_first_of(' ');
@@ -68,15 +69,15 @@ HttpRequest HttpRequest::ParseRequest(int fd, HttpRequest::RecvFunc *recv) {
       LOG_INFO("parsed HTTP request (fd: %d, %s:%s:%s, len: %ld)", fd,
                method.c_str(), request_uri.c_str(), http_version.c_str(),
                content_length);
-      return HttpRequest(method, request_uri, http_version, headers, content,
-                         content_length);
+      return std::unique_ptr<HttpRequest>(new HttpRequest(
+          method, request_uri, http_version, headers, content, content_length));
     }
     headers.push_back(string(curr, (size_t)(ptr - curr)));
     // cout << "header = " << headers[headers.size() - 1] << endl;
     curr = ptr + 2;
   }
   LOG_WARNING("invalid request? (fd: %d)", fd);
-  return HttpRequest();
+  return unique_ptr<HttpRequest>(nullptr);
 }
 
 void HttpResponse::SendHtmlResponse(const std::string &contentx) {

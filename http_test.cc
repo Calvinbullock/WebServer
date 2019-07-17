@@ -40,12 +40,12 @@ TEST(HttpTest, test1_success) {
       fileno(fd),
       [](int fd, void *d, size_t bytes, int) { return read(fd, d, bytes); });
 
-  EXPECT_EQ("GET", r.Method());
-  EXPECT_EQ("/", r.RequestUri());
+  EXPECT_EQ("GET", r->Method());
+  EXPECT_EQ("/", r->RequestUri());
   EXPECT_EQ((vector<string>{"Host: 192.168.86.2", "User-Agent: curl/7.52.1",
                             "Accept: */*"}),
-            r.Headers());
-  EXPECT_EQ("", r.Content());
+            r->Headers());
+  EXPECT_EQ("", r->Content());
   fclose(fd);
 }
 
@@ -63,14 +63,14 @@ TEST(HttpTest, test2_success) {
       fileno(fd),
       [](int fd, void *d, size_t bytes, int) { return read(fd, d, bytes); });
 
-  EXPECT_EQ("GET", r.Method());
-  EXPECT_EQ("/hello.htm", r.RequestUri());
+  EXPECT_EQ("GET", r->Method());
+  EXPECT_EQ("/hello.htm", r->RequestUri());
   EXPECT_EQ((vector<string>{
                 "User-Agent: Mozilla/4.0 (compatible; MSIE5.01; Windows NT)",
                 "Host: www.tutorialspoint.com", "Accept-Language: en-us",
                 "Accept-Encoding: gzip, deflate", "Connection: Keep-Alive"}),
-            r.Headers());
-  EXPECT_EQ("", r.Content());
+            r->Headers());
+  EXPECT_EQ("", r->Content());
   fclose(fd);
 }
 
@@ -89,7 +89,7 @@ TEST(HttpTest, EmptyRequest_Fail) {
         fileno(fd),
         [](int fd, void *d, size_t bytes, int) { return read(fd, d, bytes); });
 
-    EXPECT_EQ("", r.Method());
+    EXPECT_FALSE(r);
     fclose(fd);
   }
 }
