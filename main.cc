@@ -289,13 +289,13 @@ void byteRange(vector<string> headers) {
 }
 
 // EX serves the files
-void serveFile(const HttpRequest &req, HttpResponse *resp, const string &type) {
-  string path = FilePath(req.request_uri_);
+void serveFile(const HttpRequest *req, HttpResponse *resp, const string &type) {
+  string path = FilePath(req->RequestUri());
   int fd = open(path.c_str(), 0);
 
   if (fd == -1) {
     cout << "Unable to open file: " << path << endl;
-    resp->SetHtmlContent("Invalid Request");
+    resp->SendHtmlResponse("Invalid Request");
     return;
   }
 
@@ -305,7 +305,7 @@ void serveFile(const HttpRequest &req, HttpResponse *resp, const string &type) {
   // EX debug for lseek
   cout << file_size << ": " << err << ": " << endl;
 
-  resp->SetContent(type, fd, (size_t)file_size);
+  resp->SendResponse(type, fd, (size_t)file_size);
 }
 
 // EX this passes the file type to serveIndexHtml()
@@ -334,32 +334,30 @@ string getMimeType(string path) {
 
 // EX The function we want to make the thread run.
 void handle(const TcpConnection &conn) {
-  HttpRequest req = HttpRequest::parse(conn.fd);
-  HttpResponse resp;
+  auto req = HttpRequest::ParseRequest(conn.fd, recv);
+  HttpResponse resp(conn.fd, send);
 
-  LOG_INFO("%s request for \"%s\"", req.method_.c_str(),
-           req.request_uri_.c_str());
+  LOG_INFO("%s request for \"%s\"", req->Method().c_str(),
+           req->RequestUri().c_str());
   // TODO helps with handling brkn requets
-  if (req.method_ == "") {
+  if (req->Method() == "") {
     return;
   }
-  if (req.request_uri_ == "/stop") {
+  if (req->RequestUri() == "/stop") {
     exit(1);
   }
-  if (req.request_uri_.substr(0, 7) == "/search") {
-    resp.SetHtmlContent(htmlFormat(fileSearchSort(req.request_uri_)));
-  } else if (req.request_uri_ == "/recent") {
-    resp.SetHtmlContent(htmlFormat(everyFileSort(homeFilePath, 50)));
+  if (req->RequestUri().substr(0, 7) == "/search") {
+    resp.SendHtmlResponse(htmlFormat(fileSearchSort(req->RequestUri())));
+  } else if (req->RequestUri() == "/recent") {
+    resp.SendHtmlResponse(htmlFormat(everyFileSort(homeFilePath, 50)));
   } else {
-    string path = FilePath(req.request_uri_);
+    string path = FilePath(req->RequestUri());
     if (fs::is_directory(path)) {
-      resp.SetHtmlContent(htmlFormat(webContentSort(req.request_uri_)));
+      resp.SendHtmlResponse(htmlFormat(webContentSort(req->RequestUri())));
     } else {
-      serveFile(req, &resp, getMimeType(path));
+      serveFile(req.get(), &resp, getMimeType(path));
     }
   }
-
-  resp.Send(conn.fd);
 }
 
 #if 1

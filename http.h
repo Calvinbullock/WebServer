@@ -1,37 +1,37 @@
 // HttpRequest/HttpResponse classes
-// TODO: Basically everything needs to be fixed.  :-)
 
 #ifndef CALVIN_HTTP_H_
 #define CALVIN_HTTP_H_
 
-#include "server.h"
-#include <cstring>
-#include <iostream>
-#include <queue>
-#include <sstream>
+#include <memory>
 #include <string>
-#include <thread>
 #include <vector>
-
-#include <sys/socket.h>
-#include <sys/types.h>
 
 namespace calvin {
 
-// TODO: This class is really ugly at this point. Just don't even look.
 class HttpRequest {
 public:
-  HttpRequest() {}
+  typedef ssize_t RecvFunc(int sockfd, void *buf, size_t len, int flags);
+
+  // This parses an HTTP request, returns a nullptr if there is an error.
+  static std::unique_ptr<HttpRequest> ParseRequest(int fd, RecvFunc *recv);
+
+  void Print() const;
+
+  const std::string &Method() const { return method_; }
+  const std::string &RequestUri() const { return request_uri_; }
+  const std::vector<std::string> &Headers() const { return headers_; }
+  const std::string &Content() const { return content_; }
+
+private:
   HttpRequest(const std::string &method, const std::string &request_uri,
               const std::string &http_version,
               const std::vector<std::string> headers, const char *content,
               const size_t content_length)
       : method_(method), request_uri_(request_uri), http_version_(http_version),
         headers_(headers), content_(content, content_length) {}
-
-  void Print() const;
-
-  static HttpRequest parse(int fd);
+  HttpRequest(const HttpRequest &) = delete; // non construction-copyable
+  HttpRequest &operator=(const HttpRequest &) = delete; // non copyable
 
   const std::string method_;
   const std::string request_uri_;
@@ -40,26 +40,18 @@ public:
   const std::string content_;
 };
 
-// TODO: This class is really ugly at this point. Just don't even look.
 class HttpResponse {
 public:
-  std::string content;
-  std::string type;
-  int fd_data = -1;
-  size_t fd_length;
+  typedef ssize_t SendFunc(int sockfd, const void *buf, size_t len, int flags);
 
-  void SetHtmlContent(const std::string &contentx) {
-    this->content = contentx;
-    this->type = "text/html";
-  }
+  HttpResponse(int fd, SendFunc *send) : fd_(fd), send_(send) {}
 
-  void SetContent(const std::string typex, int data_fd, size_t length) {
-    this->type = typex;
-    this->fd_data = data_fd;
-    this->fd_length = length;
-  }
+  void SendResponse(const std::string type, int data_fd, size_t length);
+  void SendHtmlResponse(const std::string &content);
 
-  void Send(int fd);
+private:
+  const int fd_;
+  SendFunc *send_;
 };
 
 } // namespace calvin

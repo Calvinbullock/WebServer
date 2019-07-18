@@ -1,14 +1,9 @@
 #include "http.h"
 
+#include <cstring>
 #include <iostream>
 #include <sstream>
-#include <string.h>
 #include <string>
-
-// For send/recv
-#include <sys/sendfile.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include "log.h"
@@ -31,20 +26,17 @@ void HttpRequest::Print() const {
   cout << "##### END #######" << endl;
 }
 
-HttpRequest HttpRequest::parse(int fd) {
+unique_ptr<HttpRequest> HttpRequest::ParseRequest(int fd,
+                                                  HttpRequest::RecvFunc *recv) {
   LOG_INFO("parsing HTTP request (fd: %d)", fd);
 
   char buffer[BUF_SIZE];
   ssize_t len = recv(fd, buffer, BUF_SIZE - 1, 0);
   if (len < 0) {
     LOG_WARNING("unable to recv request (fd: %d)", fd);
-    return HttpRequest();
+    return unique_ptr<HttpRequest>(nullptr);
   }
   buffer[len] = '\0';
-
-  // cout << "START " << len << " ###########################" << endl;
-  // cout << string(buffer, len) << endl;
-  // cout << "END   ################################" << endl;
 
   const char *ptr;
   const char *curr = buffer;
@@ -54,13 +46,13 @@ HttpRequest HttpRequest::parse(int fd) {
   while ((ptr = strstr(curr, "\r\n")) != NULL) {
     if (ptr - buffer > len) { // Exceeded buffer size.
       LOG_WARNING("buffer overflow (fd: %d)", fd);
-      return HttpRequest();
+      return unique_ptr<HttpRequest>(nullptr);
     }
     if (ptr - curr == 0) { // End of header.
       content = ptr + 2;
       if (headers.size() == 0) {
         LOG_WARNING("empty request? (fd: %d)", fd);
-        return HttpRequest();
+        return unique_ptr<HttpRequest>(nullptr);
       }
 
       size_t l1 = headers[0].find_first_of(' ');
@@ -74,59 +66,58 @@ HttpRequest HttpRequest::parse(int fd) {
 
       size_t content_length = (size_t)(len - (content - buffer));
 
-      LOG_INFO("parsed HTTP request (fd: %d, %s:%s, len: %ld)", fd,
-               method.c_str(), request_uri.c_str(), content_length);
-      return HttpRequest(method, request_uri, http_version, headers, content,
-                         content_length);
+      LOG_INFO("parsed HTTP request (fd: %d, %s:%s:%s, len: %ld)", fd,
+               method.c_str(), request_uri.c_str(), http_version.c_str(),
+               content_length);
+      return std::unique_ptr<HttpRequest>(new HttpRequest(
+          method, request_uri, http_version, headers, content, content_length));
     }
     headers.push_back(string(curr, (size_t)(ptr - curr)));
     // cout << "header = " << headers[headers.size() - 1] << endl;
     curr = ptr + 2;
   }
   LOG_WARNING("invalid request? (fd: %d)", fd);
-  return HttpRequest();
+  return unique_ptr<HttpRequest>(nullptr);
 }
 
-void HttpResponse::Send(int fd) {
-  if (fd_data == -1) {
-    LOG_INFO("sending response, MIME: %s, length: %lu", type.c_str(),
-             content.size());
+void HttpResponse::SendHtmlResponse(const std::string &contentx) {
+  auto typex = "text/html";
 
-    stringstream buf;
+  LOG_INFO("sending response, MIME: %s, length: %lu", typex, contentx.size());
 
-    buf << "HTTP/1.0 200 OK\r\n";
-    buf << "Content-type:" << type << "\r\n";
-    buf << "Content-Length:" << content.size() << "\r\n";
-    buf << "Accept-Ranges: bytes"
-        << "\r\n";
-    buf << "\r\n";
-    buf << content;
+  stringstream buf;
+  buf << "HTTP/1.0 200 OK\r\n";
+  buf << "Content-type:" << typex << "\r\n";
+  buf << "Content-Length:" << contentx.size() << "\r\n";
+  buf << "Accept-Ranges: bytes"
+      << "\r\n";
+  buf << "\r\n";
+  buf << contentx;
 
-    send(fd, buf.str().c_str(), buf.str().size(), 0);
-  } else {
-    LOG_INFO("sending response, MIME: %s, length: %lu, fd: %d", type.c_str(),
-             fd_length, fd_data);
-    stringstream buf;
+  send_(fd_, buf.str().c_str(), buf.str().size(), 0);
+}
 
-    buf << "HTTP/1.0 200 OK\r\n";
-    buf << "Content-type:" << type << "\r\n";
-    buf << "Content-Length:" << fd_length << "\r\n";
-    buf << "Accept-Ranges: bytes"
-        << "\r\n";
-    buf << "\r\n";
-    send(fd, buf.str().c_str(), buf.str().size(), 0);
+void HttpResponse::SendResponse(const std::string type, int fd, size_t length) {
+  LOG_INFO("sending response, MIME: %s, length: %lu, fd: %d", type.c_str(),
+           length, fd);
+  stringstream buf;
 
-    ssize_t bufx = 1;
-    char buf1[4096 * 32];
-    while (bufx > 0) {
-      bufx = read(fd_data, buf1, 4096 * 32);
-      ssize_t rv = send(fd, buf1, (size_t)(bufx), 0);
-      if (rv != bufx) {
-        break;
-      }
+  buf << "HTTP/1.0 200 OK\r\n";
+  buf << "Content-type:" << type << "\r\n";
+  buf << "Content-Length:" << length << "\r\n";
+  buf << "Accept-Ranges: bytes"
+      << "\r\n";
+  buf << "\r\n";
+  send_(fd, buf.str().c_str(), buf.str().size(), 0);
+
+  ssize_t bufx = 1;
+  char buf1[4096 * 32];
+  while (bufx > 0) {
+    bufx = read(fd, buf1, 4096 * 32);
+    ssize_t rv = send_(fd_, buf1, (size_t)(bufx), 0);
+    if (rv != bufx) {
+      break;
     }
-
-    close(fd_data);
   }
 }
 

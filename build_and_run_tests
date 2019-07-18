@@ -2,8 +2,7 @@
 
 set -xe
 
-g++ example_test.cc \
+g++ http.cc http_test.cc \
     -L$HOME/lib/ -lgtest -lgtest_main -lpthread -I$HOME/include/ \
-    -o tests/x1
-
-./tests/x1
+    -o tests/http_test
+./tests/http_test

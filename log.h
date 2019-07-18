@@ -2,6 +2,7 @@
 
 #define __STRINGIZE(X) __DO_STRINGIZE(X)
 #define __DO_STRINGIZE(X) #X
+#define FILE_AND_LINE __FILE__ __STRINGIZE(__LINE__)
 
 #define __LOG(level, format, ...)                                              \
   printf(level "(" __FILE__ ":" __STRINGIZE(__LINE__) "): " format "\n",       \
