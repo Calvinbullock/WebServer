@@ -1,3 +1,5 @@
+testServer
 server
 core
-tests/
+tests
+testFiles

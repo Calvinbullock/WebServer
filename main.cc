@@ -306,6 +306,7 @@ void serveFile(const HttpRequest *req, HttpResponse *resp, const string &type) {
   cout << file_size << ": " << err << ": " << endl;
 
   resp->SendResponse(type, fd, (size_t)file_size);
+  close(fd);
 }
 
 // EX this passes the file type to serveIndexHtml()
@@ -335,14 +336,15 @@ string getMimeType(string path) {
 // EX The function we want to make the thread run.
 void handle(const TcpConnection &conn) {
   auto req = HttpRequest::ParseRequest(conn.fd, recv);
-  HttpResponse resp(conn.fd, send);
-
-  LOG_INFO("%s request for \"%s\"", req->Method().c_str(),
-           req->RequestUri().c_str());
-  // TODO helps with handling brkn requets
-  if (req->Method() == "") {
+  if (!req) {
+    LOG_INFO("INVALID REQUEST...");
     return;
   }
+  LOG_INFO("%s request for \"%s\"", req->Method().c_str(),
+           req->RequestUri().c_str());
+
+  HttpResponse resp(conn.fd, send);
+  // TODO helps with handling brkn requets
   if (req->RequestUri() == "/stop") {
     exit(1);
   }

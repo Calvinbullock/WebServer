@@ -103,12 +103,12 @@ void HttpResponse::SendResponse(const std::string type, int fd, size_t length) {
   stringstream buf;
 
   buf << "HTTP/1.0 200 OK\r\n";
-  buf << "Content-type:" << type << "\r\n";
-  buf << "Content-Length:" << length << "\r\n";
+  buf << "Content-type: " << type << "\r\n";
+  buf << "Content-Length: " << length << "\r\n";
   buf << "Accept-Ranges: bytes"
       << "\r\n";
   buf << "\r\n";
-  send_(fd, buf.str().c_str(), buf.str().size(), 0);
+  send_(fd_, buf.str().c_str(), buf.str().size(), 0);
 
   ssize_t bufx = 1;
   char buf1[4096 * 32];
