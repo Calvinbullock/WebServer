@@ -15,6 +15,11 @@ const std::string HTML_HEAD = R"RAW(<!DOCTYPE html>
     </div>
     <p>
       <h2><a href="/">Movie Index</a></h2>
+
+      <form class="mid" action="/search">
+        Search: <input type="text" name="x"><br>
+      </form>
+
       <table>
         <tr>
           <th></th>
@@ -33,7 +38,7 @@ const std::string HTML_HEAD = R"RAW(<!DOCTYPE html>
 const std::string HTML_TAIL = R"RAW(
           <!-- START OF FOOTER-->
           <tr class="low">
-            <th colspan="4">
+            <td colspan="4">
               <hr>
             </td>
           </tr>
@@ -49,7 +54,7 @@ const std::string HTML_TAIL = R"RAW(
           </td>
         </tr>
       </table>
-      <div class="low">v0.7</div>
+      <div class="low">v0.8</div>
     </p>
   </body>
 

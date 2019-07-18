@@ -12,6 +12,7 @@
 #include <iostream>
 #include <locale>
 #include <memory>
+#include <regex>
 #include <vector>
 
 #include "html.h"
@@ -41,10 +42,9 @@ struct FileSort {
   string row;
 };
 
-// TODO find a better func name
 // EX converts a string to lower case
 string toLower(string str) {
-  for (unsigned long i = 0; i < str.length(); i++) {
+  for (size_t i = 0; i < str.length(); i++) {
     str[i] = (char)tolower(str[i]);
   }
   return str;
@@ -54,6 +54,7 @@ string toLower(string str) {
 void search(string searchTarget, string path, vector<string> *searchedFiles) {
   path += "/";
   DIR *dir;
+  std::regex e(toLower(searchTarget)); // MODing
 
   struct dirent *ent;
   // EX checks if directery is open
@@ -72,32 +73,30 @@ void search(string searchTarget, string path, vector<string> *searchedFiles) {
       if ((fileName != ".") && (fileName != "..")) {
         search(searchTarget, path + fileName, searchedFiles);
       }
-    } else if (toLower(FilePath(path + fileName)).find(toLower(searchTarget)) !=
-               std::string::npos) {
+    } else if (regex_search(toLower(path + fileName), e)) {
       searchedFiles->push_back("<tr>" + creatRow(path + fileName, fileName) +
                                "</tr>");
     }
   }
   closedir(dir);
 }
-
+// TODO remove path
 // EX sorts the searched files
-string fileSearchSort(string searchTarget, string path) {
+string fileSearchSort(string searchTarget) {
   if (searchTarget.length() < 7) {
     return " <tr><td> No results </td></tr>";
   }
   vector<string> searchFiles;
-  // EX the 6 came from the keyword that is being looked for "/search"
-  searchTarget = searchTarget.substr(7, searchTarget.length() - 6);
+  // EX the 10 came from the keyword "/search" and html gook "?x="
+  searchTarget = searchTarget.substr(10, searchTarget.length() - 6);
   search(searchTarget, "", &searchFiles);
   string html;
 
   sort(searchFiles.begin(), searchFiles.end());
-  html = "<table>";
   for (size_t i = 0; i < searchFiles.size(); i++) {
-    html += searchFiles[i];
+    html += searchFiles[i] + "\n";
   }
-  return html + "</table>";
+  return html;
 }
 
 // EX puts every file in a vetor with the date it was added
@@ -142,12 +141,10 @@ string everyFileSort(string path, int numOfRows) {
        [](const FileSort &a, const FileSort &b) {
          return a.date_created > b.date_created;
        });
-  html = "<table>";
   for (size_t i = 0; i < numOfRows; i++) {
     html += everyFile[i].row;
   }
-
-  return html + "</table>";
+  return html;
 }
 
 // EX sorts the vector indexes that hold the rows & formats for HTML table
@@ -168,9 +165,9 @@ string webContentSort(string path) {
   // EX this row is the parentDirectory Row than added to the rest
   webContentF = R"stop(
         <tr>
-          <td class="icon"        ><img src="/assets/backArrow_icon_edit.png" alt="[DNE]" width="10"></td>
-          <td class="filename"    ><a href="../"> &lt;&lt;PD </a></td>
-          <td class="filesize"    > -- </td>
+          <td class="icon" ><img src="/assets/backArrow_icon_edit.png" alt="[DNE]" width="10"></td>
+          <td class="filename" ><a href="../"> &lt;&lt;PD </a></td>
+          <td class="filesize"> -- </td>
           <td class="lastmodified"> -- </td>
         </tr>
       )stop" + webContentF;
@@ -207,26 +204,30 @@ string creatRow(string webpath, string name) {
   char timeB[80];
   strftime(timeB, 80, "%b/%d/%y", std::localtime(&cftime));
 
+  string icon;
+  if ((filepath).find(".m4v") != std::string::npos ||
+      (filepath).find(".mp4") != std::string::npos) {
+    icon = "<img src= \"/assets/video_icon.png\" ";
+  } else if (filepath.find(".mp3") != std::string::npos) {
+    icon = "<img src=\"/assets/audio_icon_edit.png\" ";
+  } else {
+    icon = "<img src=\"/assets/file_icon_edit.png\" ";
+  }
+
   if (fs::is_directory(filepath)) {
     row[0] =
         R"(<td class="icon"><img src="/assets/folder_icon_edit.png" alt="[DNE]" width="20"></td>)";
-    row[1] = "<td class=\"filename\"    ><a href = \"" + webpath + "/\">" +
-             name + "</a></td>";
-    row[2] = "<td class=\"filesize\"    >0 B</td>";
+    row[1] = "<td class=\"filename\" ><a href = \"" + webpath + "/\">" + name +
+             "</a></td>";
+    row[2] = "<td class=\"filesize\" >0 B</td>"; // TODO get dur size func here
     row[3] = "<td class=\"lastmodified\">--</td>";
   } else {
-    if ((filepath).find(".m4v") != std::string::npos ||
-        (filepath).find(".mp4") != std::string::npos) {
-      row[0] =
-          R"(<td class="icon"><img src="/assets/video_icon.png" alt="[DNE]" width="20"></td>)";
-    } else {
-      row[0] =
-          R"(<td class="icon"><img src="/assets/file_icon_edit.png" alt="[DNE]" width="20"></td>)";
-    }
-    row[1] = "<td class=\"filename\"    ><a href = \"" + webpath + "\">" +
-             name + "</a></td>";
-    row[2] = "<td class=\"filesize\"    >" + byteConversion(fs::file_size(p)) +
-             "</td>";
+    row[0] =
+        R"(<td class="icon">)" + icon + R"(alt="[DNE]" width="20"></td>)";
+    row[1] = "<td class=\"filename\" ><a href = \"" + webpath + "\">" + name +
+             "</a></td>";
+    row[2] =
+        "<td class=\"filesize\" >" + byteConversion(fs::file_size(p)) + "</td>";
     row[3] = "<td class=\"lastmodified\">" + string(timeB) + "</td>";
   }
   return row[0] + row[1] + row[2] + row[3];
@@ -256,6 +257,35 @@ vector<string> getFileDirectory(string path) {
   }
   closedir(dir);
   return webContent;
+}
+
+// TODO finish this func
+// EX finds the byte range
+void byteRange(vector<string> headers) {
+  // void byteRange(const HttpRequest &req) {
+  int range[2];
+  string target;
+  unsigned long targetNumS;
+  unsigned long targetNumE;
+  for (unsigned long i = 0; i < headers.size(); i++) {
+    if (headers[i].find("Range") != std::string::npos) {
+      target = headers[i];
+    }
+  }
+  if (target.length() > 1) {
+    for (unsigned long i = 0; i < target.length(); i++) {
+      if (target[i] == '=') {
+        targetNumS = i;
+      } else if (target[i] == '-') {
+        targetNumE = i;
+      }
+    }
+    range[0] = atoi(target.c_str() + targetNumS + 1);
+    range[1] = atoi(target.c_str() + targetNumE + 1);
+    cout << "startNum = " << range[0] << endl;
+    cout << "endNum = " << range[1] << endl;
+  }
+  // return range[];
 }
 
 // EX serves the files
@@ -317,8 +347,7 @@ void handle(const TcpConnection &conn) {
     exit(1);
   }
   if (req->RequestUri().substr(0, 7) == "/search") {
-    resp.SendHtmlResponse(
-        htmlFormat(fileSearchSort(req->RequestUri(), homeFilePath)));
+    resp.SendHtmlResponse(htmlFormat(fileSearchSort(req->RequestUri())));
   } else if (req->RequestUri() == "/recent") {
     resp.SendHtmlResponse(htmlFormat(everyFileSort(homeFilePath, 50)));
   } else {

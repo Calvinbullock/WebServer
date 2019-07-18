@@ -3,6 +3,11 @@ body {
   color: white;
 }
 
+#search {
+  color: #ffd700;
+  opacity: 0.87;
+}
+
 a {
   opacity: 0.9;
   color: #ffd700;
