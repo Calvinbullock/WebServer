@@ -44,7 +44,7 @@ struct FileSort {
 
 // EX converts a string to lower case
 string toLower(string str) {
-  for (unsigned long i = 0; i < str.length(); i++) {
+  for (size_t i = 0; i < str.length(); i++) {
     str[i] = (char)tolower(str[i]);
   }
   return str;
@@ -54,7 +54,7 @@ string toLower(string str) {
 void search(string searchTarget, string path, vector<string> *searchedFiles) {
   path += "/";
   DIR *dir;
-  std::regex e(searchTarget); // MODing
+  std::regex e(toLower(searchTarget)); // MODing
 
   struct dirent *ent;
   // EX checks if directery is open
@@ -73,9 +73,7 @@ void search(string searchTarget, string path, vector<string> *searchedFiles) {
       if ((fileName != ".") && (fileName != "..")) {
         search(searchTarget, path + fileName, searchedFiles);
       }
-    } else if (regex_search(fileName, e)) {
-      /*} else if (toLower(FilePath(path +
-         fileName)).find(toLower(searchTarget)) != std::string::npos) { */ // modifi this peace
+    } else if (regex_search(toLower(path + fileName), e)) {
       searchedFiles->push_back("<tr>" + creatRow(path + fileName, fileName) +
                                "</tr>");
     }
@@ -96,7 +94,7 @@ string fileSearchSort(string searchTarget) {
 
   sort(searchFiles.begin(), searchFiles.end());
   for (size_t i = 0; i < searchFiles.size(); i++) {
-    html += searchFiles[i];
+    html += searchFiles[i] + "\n";
   }
   return html;
 }
@@ -221,7 +219,7 @@ string creatRow(string webpath, string name) {
         R"(<td class="icon"><img src="/assets/folder_icon_edit.png" alt="[DNE]" width="20"></td>)";
     row[1] = "<td class=\"filename\" ><a href = \"" + webpath + "/\">" + name +
              "</a></td>";
-    row[2] = "<td class=\"filesize\" >0 B</td>";
+    row[2] = "<td class=\"filesize\" >0 B</td>"; // TODO get dur size func here
     row[3] = "<td class=\"lastmodified\">--</td>";
   } else {
     row[0] =
