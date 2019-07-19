@@ -27,8 +27,14 @@ using namespace std;
 
 const string homeFilePath = ".";
 
+struct FileSort {
+  std::chrono::nanoseconds date_created;
+  string row;
+};
+
 vector<string> getFileDirectory(string path);
 string creatRow(string path, string name);
+void everyFileVec(string path, vector<FileSort> *everyFile);
 
 /* -------------------------------- ------- -------------------------------- **
 -- -------------------------------- Methods -------------------------------- --
@@ -36,11 +42,6 @@ string creatRow(string path, string name);
 ** -------------------------------- ------- -------------------------------- */
 
 string FilePath(const string &path) { return homeFilePath + path; }
-
-struct FileSort {
-  std::chrono::nanoseconds date_created;
-  string row;
-};
 
 // EX converts a string to lower case
 string toLower(string str) {
@@ -50,103 +51,72 @@ string toLower(string str) {
   return str;
 }
 
-// EX recurses through each directery looking for file names that match target
-void search(string searchTarget, string path, vector<string> *searchedFiles) {
+/* EX recurses trough each directery and adds every file to a vec send target a
+ * blank string to just get every file and its size*/
+void recursiveIndex(string searchTarget, string path,
+                    vector<FileSort> *fileIndex) {
   path += "/";
   DIR *dir;
-  std::regex e(toLower(searchTarget)); // MODing
-
+  // EX regex for search
+  std::regex e(toLower(searchTarget));
   struct dirent *ent;
   // EX checks if directery is open
   if ((dir = opendir(FilePath(path).c_str())) == NULL) {
     perror("");
     return;
   }
-
-  // EX adds all the files and directories within directory to everyFile
   while ((ent = readdir(dir)) != NULL) {
     string fileName = string(ent->d_name);
     fs::path p = FilePath(path + fileName);
+    // EX dse is for recent files
+    auto dSE = fs::last_write_time(p).time_since_epoch();
 
     if (fs::is_directory(FilePath(path + fileName))) {
       // EX "if" checks for the "." ".." so it dose not infa loop
       if ((fileName != ".") && (fileName != "..")) {
-        search(searchTarget, path + fileName, searchedFiles);
+        recursiveIndex(searchTarget, path + fileName, fileIndex);
       }
     } else if (regex_search(toLower(path + fileName), e)) {
-      searchedFiles->push_back("<tr>" + creatRow(path + fileName, fileName) +
-                               "</tr>");
-    }
-  }
-  closedir(dir);
-}
-// TODO remove path
-// EX sorts the searched files
-string fileSearchSort(string searchTarget) {
-  if (searchTarget.length() < 7) {
-    return " <tr><td> No results </td></tr>";
-  }
-  vector<string> searchFiles;
-  // EX the 10 came from the keyword "/search" and html gook "?x="
-  searchTarget = searchTarget.substr(10, searchTarget.length() - 6);
-  search(searchTarget, "", &searchFiles);
-  string html;
-
-  sort(searchFiles.begin(), searchFiles.end());
-  for (size_t i = 0; i < searchFiles.size(); i++) {
-    html += searchFiles[i] + "\n";
-  }
-  return html;
-}
-
-// EX puts every file in a vetor with the date it was added
-void everyFileVec(string path, vector<FileSort> *everyFile) {
-  path += "/";
-  DIR *dir;
-
-  struct dirent *ent;
-  // EX checks if directery is open
-  if ((dir = opendir(FilePath(path).c_str())) == NULL) {
-    perror("");
-    return;
-  }
-
-  /* EX adds all the files and directories within directory to everyFile*/
-  while ((ent = readdir(dir)) != NULL) {
-    string fileName = string(ent->d_name);
-    fs::path p = FilePath(path + fileName);
-    auto dSE = fs::last_write_time(p).time_since_epoch();
-    printf("%s %ld\n", ent->d_name, dSE.count());
-
-    if (fs::is_directory(FilePath(path + fileName))) {
-      // EX "if" checks for the "." ".." so it dose not infa loop
-      if ((fileName != ".") && (fileName != "..")) {
-        everyFileVec(path + fileName, everyFile);
-      }
-    } else {
-      everyFile->push_back(FileSort{
-          dSE, "<tr>" + creatRow(path + fileName, fileName) + "</tr>"});
+      fileIndex->push_back((FileSort{
+          dSE, "<tr>" + creatRow(path + fileName, fileName) + "</tr>"}));
     }
   }
   closedir(dir);
 }
 
-// EX returns the html table for oldest and newest files
-string everyFileSort(string path, int numOfRows) {
-  vector<FileSort> everyFile;
-  everyFileVec("", &everyFile);
-  string html;
-
-  sort(everyFile.begin(), everyFile.end(),
-       [](const FileSort &a, const FileSort &b) {
-         return a.date_created > b.date_created;
-       });
-  for (size_t i = 0; i < numOfRows; i++) {
-    html += everyFile[i].row;
+// EX loopEnd should be 0 if you want to search results and in recent taget= ""
+// EX a combanation of everyFileSort() & fileSearchSort()
+string ultSort(string searchTarget, size_t loopEnd) {
+  string htmlReturn;
+  vector<FileSort> files;
+  if (searchTarget.length() > 0) {
+    searchTarget = searchTarget.substr(10, searchTarget.length() - 6);
   }
-  return html;
+  recursiveIndex(searchTarget, "", &files);
+  cout << "line 142 -========== " << endl;
+
+  // EX "if" for recent "else" for search
+  if (loopEnd > 0) {
+    // everyFileVec("", &files);
+    sort(files.begin(), files.end(), [](const FileSort &a, const FileSort &b) {
+      return a.date_created > b.date_created;
+    });
+
+  } else {
+    // EX the 10 came from the keyword "/search" and html gook "?x="
+    // search(searchTarget, "", &files);
+    sort(files.begin(), files.end(),
+         [](const FileSort &a, const FileSort &b) { return a.row > b.row; });
+    loopEnd = files.size();
+  }
+  // EX bi-function compatable
+  for (size_t i = 0; i < loopEnd; i++) {
+    htmlReturn += files[i].row + "\n";
+  }
+  return htmlReturn;
 }
 
+// TODO mearge with other sort Method
 // EX sorts the vector indexes that hold the rows & formats for HTML table
 string webContentSort(string path) {
   vector<string> webContent = getFileDirectory(path);
@@ -261,7 +231,7 @@ vector<string> getFileDirectory(string path) {
 
 // TODO finish this func
 // EX finds the byte range
-void byteRange(vector<string> headers) {
+bool byteRange(const vector<string> &headers, size_t *start, size_t *end) {
   // void byteRange(const HttpRequest &req) {
   int range[2];
   string target;
@@ -284,8 +254,11 @@ void byteRange(vector<string> headers) {
     range[1] = atoi(target.c_str() + targetNumE + 1);
     cout << "startNum = " << range[0] << endl;
     cout << "endNum = " << range[1] << endl;
+    *start = (size_t)range[0];
+    *end = (size_t)range[1];
+    return true;
   }
-  // return range[];
+  return false;
 }
 
 // EX serves the files
@@ -305,6 +278,15 @@ void serveFile(const HttpRequest *req, HttpResponse *resp, const string &type) {
   // EX debug for lseek
   cout << file_size << ": " << err << ": " << endl;
 
+  /*size_t start, end;
+  if (byteRange(req->Headers(), &start, &end)) {
+    if (end == 0) {
+      end = (size_t)file_size;
+    }
+    LOG_INFO("Send partial response: %ld %ld", start, end);
+    // resp->SendPartialResponse(type, fd, (size_t)file_size, start, end);
+    resp->SendResponse(type, fd, (size_t)file_size);
+  } else {*/
   resp->SendResponse(type, fd, (size_t)file_size);
   close(fd);
 }
@@ -349,9 +331,10 @@ void handle(const TcpConnection &conn) {
     exit(1);
   }
   if (req->RequestUri().substr(0, 7) == "/search") {
-    resp.SendHtmlResponse(htmlFormat(fileSearchSort(req->RequestUri())));
+    resp.SendHtmlResponse(htmlFormat(ultSort(req->RequestUri(), 0)));
   } else if (req->RequestUri() == "/recent") {
-    resp.SendHtmlResponse(htmlFormat(everyFileSort(homeFilePath, 50)));
+    // EX reason for the blank string is further explained in the func ultSort
+    resp.SendHtmlResponse(htmlFormat(ultSort("", 50)));
   } else {
     string path = FilePath(req->RequestUri());
     if (fs::is_directory(path)) {

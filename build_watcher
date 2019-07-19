@@ -5,7 +5,9 @@ set -x
 while true; do
 ./build_server && ./build_and_run_tests
 
-inotifywait -rq -e modify,create,delete .
+sleep 5
+inotifywait -r -e modify,create,delete .
+exit 1
 
 pkill testServer
 done

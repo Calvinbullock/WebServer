@@ -47,6 +47,8 @@ public:
   HttpResponse(int fd, SendFunc *send) : fd_(fd), send_(send) {}
 
   void SendResponse(const std::string type, int data_fd, size_t length);
+  void SendPartialResponse(const std::string type, int data_fd, size_t length,
+                           size_t start, size_t end);
   void SendHtmlResponse(const std::string &content);
 
 private:

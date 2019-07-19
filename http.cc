@@ -121,4 +121,30 @@ void HttpResponse::SendResponse(const std::string type, int fd, size_t length) {
   }
 }
 
+void HttpResponse::SendPartialResponse(const std::string type, int fd,
+                                       size_t length, size_t start,
+                                       size_t end) {
+  LOG_INFO("sending response, MIME: %s, length: %lu, fd: %d", type.c_str(),
+           length, fd);
+  stringstream buf;
+
+  buf << "HTTP/1.0 206 Partial Content\r\n";
+  buf << "Content-type: " << type << "\r\n";
+  buf << "Content-Length: " << length << "\r\n";
+  buf << "Accept-Ranges: bytes";
+  buf << "Content-Range: " << start << "-" << end << "/" << length << "\r\n";
+  buf << "\r\n";
+  send_(fd_, buf.str().c_str(), buf.str().size(), 0);
+
+  ssize_t bufx = 1;
+  char buf1[4096 * 32];
+  while (bufx > 0) {
+    bufx = read(fd, buf1, 4096 * 32);
+    ssize_t rv = send_(fd_, buf1, (size_t)(bufx), 0);
+    if (rv != bufx) {
+      break;
+    }
+  }
+}
+
 } // namespace calvin
