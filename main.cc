@@ -27,8 +27,11 @@ using namespace std;
 const string homeFilePath = ".";
 
 struct FileSort {
+  string path;
+  string fileName;
   std::chrono::nanoseconds date_created;
-  string row;
+
+  string getLink() { return path + fileName; }
 };
 
 /* -------------------------------- ------- -------------------------------- **
@@ -38,6 +41,11 @@ struct FileSort {
 
 string FilePath(const string &path) { return homeFilePath + path; }
 
+// EX creats the html page
+string htmlFormat(string tableRows) {
+  return HTML_HEAD + tableRows + HTML_TAIL;
+}
+
 // EX converts a string to lower case
 string toLower(string str) {
   for (size_t i = 0; i < str.length(); i++) {
@@ -46,13 +54,8 @@ string toLower(string str) {
   return str;
 }
 
-// EX creats the html page
-string htmlFormat(string tableRows) {
-  return HTML_HEAD + tableRows + HTML_TAIL;
-}
-
 // EX converts bytes to needed unit
-string byteConversion(unsigned long size) {
+string formatFileSize(unsigned long size) {
   int unit = 0;
   string units[] = {"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
 
@@ -65,10 +68,9 @@ string byteConversion(unsigned long size) {
 
 // TODO needs the last time a file was accsesed
 // EX returns the elements of a table row
-string creatRow(string webpath, string name) {
-  // EX this method is called only from getFiledirectery
+string creatRow(FileSort file) {
   string row[5];
-  string filepath = FilePath(webpath);
+  string filepath = FilePath(file.getLink());
   fs::path p = filepath;
   auto ftime = fs::last_write_time(p);
   // EX assuming system_clock
@@ -89,25 +91,25 @@ string creatRow(string webpath, string name) {
   if (fs::is_directory(filepath)) {
     row[0] =
         R"(<td class="icon"><img src="/assets/folder_icon_edit.png" alt="[DNE]" width="20"></td>)";
-    row[1] = "<td class=\"filename\" ><a href = \"" + webpath + "/\">" + name +
-             "</a></td>";
+    row[1] = "<td class=\"filename\" ><a href = \"" + file.getLink() + "/\">" +
+             file.fileName + "</a></td>";
     row[2] = "<td class=\"filesize\" >0 B</td>"; // TODO get dur size func here
     row[3] = "<td class=\"lastmodified\">--</td>";
   } else {
     row[0] =
         R"(<td class="icon">)" + icon + R"(alt="[DNE]" width="20"></td>)";
-    row[1] = "<td class=\"filename\" ><a href = \"" + webpath + "\">" + name +
-             "</a></td>";
+    row[1] = "<td class=\"filename\" ><a href = \"" + file.getLink() + "\">" +
+             file.fileName + "</a></td>";
     row[2] =
-        "<td class=\"filesize\" >" + byteConversion(fs::file_size(p)) + "</td>";
+        "<td class=\"filesize\" >" + formatFileSize(fs::file_size(p)) + "</td>";
     row[3] = "<td class=\"lastmodified\">" + string(timeB) + "</td>";
   }
-  return row[0] + row[1] + row[2] + row[3];
+  return "<tr>" + row[0] + row[1] + row[2] + row[3] + "</tr>\n";
 }
 
 // EX creats and fills the vector that holds the table rows html
-vector<string> getFileDirectory(string path) {
-  vector<string> webContent;
+vector<FileSort> getFileDirectory(string path) {
+  vector<FileSort> webContent;
   string filepath = FilePath(path);
   DIR *dir;
   struct dirent *ent;
@@ -123,8 +125,7 @@ vector<string> getFileDirectory(string path) {
   while ((ent = readdir(dir)) != NULL) {
     string fileName = string(ent->d_name); // what is this
     // LOG_DEBUG("directory entry: %s", ent->d_name);
-    webContent.push_back("<tr>" + creatRow(path + fileName, fileName) +
-                         "</tr>");
+    webContent.push_back(FileSort{path, fileName});
     i++;
   }
   closedir(dir);
@@ -157,8 +158,7 @@ void recursiveIndex(string searchTarget, string path,
         recursiveIndex(searchTarget, path + fileName, fileIndex);
       }
     } else if (regex_search(toLower(path + fileName), e)) {
-      fileIndex->push_back((FileSort{
-          dSE, "<tr>" + creatRow(path + fileName, fileName) + "</tr>"}));
+      fileIndex->push_back(FileSort{path, fileName, dSE});
     }
   }
   closedir(dir);
@@ -170,58 +170,57 @@ string ultSort(string searchTarget, size_t loopEnd) {
   string htmlReturn;
   vector<FileSort> files;
   if (searchTarget.length() > 0) {
+    // EX the 10 came from the keyword "/search" and html gook "?x="
     searchTarget = searchTarget.substr(10, searchTarget.length() - 6);
   }
   recursiveIndex(searchTarget, "", &files);
-  cout << "line 142 -========== " << endl;
 
   // EX "if" for recent "else" for search
   if (loopEnd > 0) {
-    // everyFileVec("", &files);
     sort(files.begin(), files.end(), [](const FileSort &a, const FileSort &b) {
       return a.date_created > b.date_created;
     });
 
   } else {
-    // EX the 10 came from the keyword "/search" and html gook "?x="
-    // search(searchTarget, "", &files);
-    sort(files.begin(), files.end(),
-         [](const FileSort &a, const FileSort &b) { return a.row > b.row; });
+    sort(files.begin(), files.end(), [](const FileSort &a, const FileSort &b) {
+      return a.fileName < b.fileName;
+    });
     loopEnd = files.size();
   }
   // EX bi-function compatable
   for (size_t i = 0; i < loopEnd; i++) {
-    htmlReturn += files[i].row + "\n";
+    htmlReturn += creatRow(files[i]);
   }
   return htmlReturn;
 }
 
-// TODO mearge with other sort Method
+// TODO mearge with other sort Method mabey
 // EX sorts the vector indexes that hold the rows & formats for HTML table
 string webContentSort(string path) {
-  vector<string> webContent = getFileDirectory(path);
-  string webContentF;
-
-  sort(webContent.begin(), webContent.end());
-  for (size_t i = 0; i < webContent.size(); i++) {
-    // TODO should this "if" move to vec creation to eliminate to itterations?
-    if (webContent[i].find("./") != std::string::npos ||
-        webContent[i].find("..") != std::string::npos) {
-      webContent[i].erase(i);
-    } else {
-      webContentF = webContentF + webContent[i];
-    }
-  }
-  // EX this row is the parentDirectory Row than added to the rest
-  webContentF = R"stop(
+  vector<FileSort> webContent = getFileDirectory(path);
+  // EX this row is the parentDirectory Row
+  string htmlReturn = R"stop(
         <tr>
           <td class="icon" ><img src="/assets/backArrow_icon_edit.png" alt="[DNE]" width="10"></td>
           <td class="filename" ><a href="../"> &lt;&lt;PD </a></td>
           <td class="filesize"> -- </td>
           <td class="lastmodified"> -- </td>
         </tr>
-      )stop" + webContentF;
-  return webContentF;
+      )stop";
+
+  sort(webContent.begin(), webContent.end(),
+       [](const FileSort &a, const FileSort &b) {
+         return a.fileName < b.fileName;
+       });
+  for (size_t i = 0; i < webContent.size(); i++) {
+    // TODO should this "if" move to vec creation to eliminate to itterations?
+    if (webContent[i].fileName == "." || webContent[i].fileName == "..") {
+      webContent.erase(webContent.begin() + (long)i);
+    } else {
+      htmlReturn += creatRow(webContent[i]);
+    }
+  }
+  return htmlReturn;
 }
 
 // TODO finish this func
@@ -247,8 +246,6 @@ bool byteRange(const vector<string> &headers, size_t *start, size_t *end) {
     }
     range[0] = atoi(target.c_str() + targetNumS + 1);
     range[1] = atoi(target.c_str() + targetNumE + 1);
-    cout << "startNum = " << range[0] << endl;
-    cout << "endNum = " << range[1] << endl;
     *start = (size_t)range[0];
     *end = (size_t)range[1];
     return true;
@@ -256,6 +253,7 @@ bool byteRange(const vector<string> &headers, size_t *start, size_t *end) {
   return false;
 }
 
+// TODO finish the commented code
 // EX serves the files
 void serveFile(const HttpRequest *req, HttpResponse *resp, const string &type) {
   string path = FilePath(req->RequestUri());
@@ -272,7 +270,7 @@ void serveFile(const HttpRequest *req, HttpResponse *resp, const string &type) {
 
   // EX debug for lseek
   cout << file_size << ": " << err << ": " << endl;
-
+  // TODO finish the stuff below
   /*size_t start, end;
   if (byteRange(req->Headers(), &start, &end)) {
     if (end == 0) {
@@ -300,7 +298,6 @@ string getMimeType(string path) {
     return "text/html";
   } else if (path.find(css) != std::string::npos) {
     return "text/css";
-    // TODO mime testing below
   } else if (path.find(m4v) != std::string::npos) {
     return "video/x-m4v";
   } else if (path.find(mp4) != std::string::npos) {
@@ -321,7 +318,7 @@ void handle(const TcpConnection &conn) {
            req->RequestUri().c_str());
 
   HttpResponse resp(conn.fd, send);
-  // TODO helps with handling brkn requets
+  // TODO helps with handling brkn requets unfin
   if (req->RequestUri() == "/stop") {
     exit(1);
   }

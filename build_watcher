@@ -7,7 +7,6 @@ while true; do
 
 sleep 5
 inotifywait -r -e modify,create,delete .
-exit 1
 
 pkill testServer
 done
