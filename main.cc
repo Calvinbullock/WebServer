@@ -21,7 +21,6 @@
 #include "server.h"
 
 namespace fs = std::experimental::filesystem;
-#define BUF_SIZE 1024 * 1024
 using namespace calvin;
 using namespace std;
 
@@ -31,10 +30,6 @@ struct FileSort {
   std::chrono::nanoseconds date_created;
   string row;
 };
-
-vector<string> getFileDirectory(string path);
-string creatRow(string path, string name);
-void everyFileVec(string path, vector<FileSort> *everyFile);
 
 /* -------------------------------- ------- -------------------------------- **
 -- -------------------------------- Methods -------------------------------- --
@@ -49,6 +44,91 @@ string toLower(string str) {
     str[i] = (char)tolower(str[i]);
   }
   return str;
+}
+
+// EX creats the html page
+string htmlFormat(string tableRows) {
+  return HTML_HEAD + tableRows + HTML_TAIL;
+}
+
+// EX converts bytes to needed unit
+string byteConversion(unsigned long size) {
+  int unit = 0;
+  string units[] = {"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
+
+  while (size >= 1024) {
+    size /= 1024;
+    ++unit;
+  }
+  return to_string((int)size) + " " + units[unit];
+}
+
+// TODO needs the last time a file was accsesed
+// EX returns the elements of a table row
+string creatRow(string webpath, string name) {
+  // EX this method is called only from getFiledirectery
+  string row[5];
+  string filepath = FilePath(webpath);
+  fs::path p = filepath;
+  auto ftime = fs::last_write_time(p);
+  // EX assuming system_clock
+  std::time_t cftime = decltype(ftime)::clock::to_time_t(ftime);
+  char timeB[80];
+  strftime(timeB, 80, "%b/%d/%y", std::localtime(&cftime));
+
+  string icon;
+  if ((filepath).find(".m4v") != std::string::npos ||
+      (filepath).find(".mp4") != std::string::npos) {
+    icon = "<img src= \"/assets/video_icon.png\" ";
+  } else if (filepath.find(".mp3") != std::string::npos) {
+    icon = "<img src=\"/assets/audio_icon_edit.png\" ";
+  } else {
+    icon = "<img src=\"/assets/file_icon_edit.png\" ";
+  }
+
+  if (fs::is_directory(filepath)) {
+    row[0] =
+        R"(<td class="icon"><img src="/assets/folder_icon_edit.png" alt="[DNE]" width="20"></td>)";
+    row[1] = "<td class=\"filename\" ><a href = \"" + webpath + "/\">" + name +
+             "</a></td>";
+    row[2] = "<td class=\"filesize\" >0 B</td>"; // TODO get dur size func here
+    row[3] = "<td class=\"lastmodified\">--</td>";
+  } else {
+    row[0] =
+        R"(<td class="icon">)" + icon + R"(alt="[DNE]" width="20"></td>)";
+    row[1] = "<td class=\"filename\" ><a href = \"" + webpath + "\">" + name +
+             "</a></td>";
+    row[2] =
+        "<td class=\"filesize\" >" + byteConversion(fs::file_size(p)) + "</td>";
+    row[3] = "<td class=\"lastmodified\">" + string(timeB) + "</td>";
+  }
+  return row[0] + row[1] + row[2] + row[3];
+}
+
+// EX creats and fills the vector that holds the table rows html
+vector<string> getFileDirectory(string path) {
+  vector<string> webContent;
+  string filepath = FilePath(path);
+  DIR *dir;
+  struct dirent *ent;
+
+  // EX checks if directery is open
+  if ((dir = opendir(filepath.c_str())) == NULL) {
+    perror("");
+    return webContent;
+  }
+
+  /* EX print all the files and directories within directory */
+  int i = 0;
+  while ((ent = readdir(dir)) != NULL) {
+    string fileName = string(ent->d_name); // what is this
+    // LOG_DEBUG("directory entry: %s", ent->d_name);
+    webContent.push_back("<tr>" + creatRow(path + fileName, fileName) +
+                         "</tr>");
+    i++;
+  }
+  closedir(dir);
+  return webContent;
 }
 
 /* EX recurses trough each directery and adds every file to a vec send target a
@@ -142,91 +222,6 @@ string webContentSort(string path) {
         </tr>
       )stop" + webContentF;
   return webContentF;
-}
-
-// EX creats the html page
-string htmlFormat(string tableRows) {
-  return HTML_HEAD + tableRows + HTML_TAIL;
-}
-
-// EX converts bytes to needed unit
-string byteConversion(unsigned long size) {
-  int unit = 0;
-  string units[] = {"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
-
-  while (size >= 1024) {
-    size /= 1024;
-    ++unit;
-  }
-  return to_string((int)size) + " " + units[unit];
-}
-
-// TODO needs the last time a file was accsesed
-// EX returns the elements of a table row
-string creatRow(string webpath, string name) {
-  // EX this method is called only from getFiledirectery
-  string row[5];
-  string filepath = FilePath(webpath);
-  fs::path p = filepath;
-  auto ftime = fs::last_write_time(p);
-  // EX assuming system_clock
-  std::time_t cftime = decltype(ftime)::clock::to_time_t(ftime);
-  char timeB[80];
-  strftime(timeB, 80, "%b/%d/%y", std::localtime(&cftime));
-
-  string icon;
-  if ((filepath).find(".m4v") != std::string::npos ||
-      (filepath).find(".mp4") != std::string::npos) {
-    icon = "<img src= \"/assets/video_icon.png\" ";
-  } else if (filepath.find(".mp3") != std::string::npos) {
-    icon = "<img src=\"/assets/audio_icon_edit.png\" ";
-  } else {
-    icon = "<img src=\"/assets/file_icon_edit.png\" ";
-  }
-
-  if (fs::is_directory(filepath)) {
-    row[0] =
-        R"(<td class="icon"><img src="/assets/folder_icon_edit.png" alt="[DNE]" width="20"></td>)";
-    row[1] = "<td class=\"filename\" ><a href = \"" + webpath + "/\">" + name +
-             "</a></td>";
-    row[2] = "<td class=\"filesize\" >0 B</td>"; // TODO get dur size func here
-    row[3] = "<td class=\"lastmodified\">--</td>";
-  } else {
-    row[0] =
-        R"(<td class="icon">)" + icon + R"(alt="[DNE]" width="20"></td>)";
-    row[1] = "<td class=\"filename\" ><a href = \"" + webpath + "\">" + name +
-             "</a></td>";
-    row[2] =
-        "<td class=\"filesize\" >" + byteConversion(fs::file_size(p)) + "</td>";
-    row[3] = "<td class=\"lastmodified\">" + string(timeB) + "</td>";
-  }
-  return row[0] + row[1] + row[2] + row[3];
-}
-
-// EX creats and fills the vector that holds the table rows html
-vector<string> getFileDirectory(string path) {
-  vector<string> webContent;
-  string filepath = FilePath(path);
-  DIR *dir;
-  struct dirent *ent;
-
-  // EX checks if directery is open
-  if ((dir = opendir(filepath.c_str())) == NULL) {
-    perror("");
-    return webContent;
-  }
-
-  /* EX print all the files and directories within directory */
-  int i = 0;
-  while ((ent = readdir(dir)) != NULL) {
-    string fileName = string(ent->d_name); // what is this
-    // LOG_DEBUG("directory entry: %s", ent->d_name);
-    webContent.push_back("<tr>" + creatRow(path + fileName, fileName) +
-                         "</tr>");
-    i++;
-  }
-  closedir(dir);
-  return webContent;
 }
 
 // TODO finish this func
