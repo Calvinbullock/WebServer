@@ -164,19 +164,20 @@ void recursiveIndex(string searchTarget, string path,
   closedir(dir);
 }
 
-// EX loopEnd should be 0 if you want to search results and in recent taget= ""
+// EX if you want to go sown recent SearchTaget needs to be ""
 // EX a combanation of everyFileSort() & fileSearchSort()
 string ultSort(string searchTarget, size_t loopEnd) {
   string htmlReturn;
   vector<FileSort> files;
-  if (searchTarget.length() > 0) {
+  // EX 10 as that is the min the substring needs
+  if (searchTarget.length() > 10) {
     // EX the 10 came from the keyword "/search" and html gook "?x="
     searchTarget = searchTarget.substr(10, searchTarget.length() - 6);
   }
   recursiveIndex(searchTarget, "", &files);
 
   // EX "if" for recent "else" for search
-  if (loopEnd > 0) {
+  if (searchTarget.length() == 0) {
     sort(files.begin(), files.end(), [](const FileSort &a, const FileSort &b) {
       return a.date_created > b.date_created;
     });
@@ -185,7 +186,6 @@ string ultSort(string searchTarget, size_t loopEnd) {
     sort(files.begin(), files.end(), [](const FileSort &a, const FileSort &b) {
       return a.fileName < b.fileName;
     });
-    loopEnd = files.size();
   }
   // EX bi-function compatable
   for (size_t i = 0; i < loopEnd; i++) {
@@ -323,7 +323,7 @@ void handle(const TcpConnection &conn) {
     exit(1);
   }
   if (req->RequestUri().substr(0, 7) == "/search") {
-    resp.SendHtmlResponse(htmlFormat(ultSort(req->RequestUri(), 0)));
+    resp.SendHtmlResponse(htmlFormat(ultSort(req->RequestUri(), 100)));
   } else if (req->RequestUri() == "/recent") {
     // EX reason for the blank string is further explained in the func ultSort
     resp.SendHtmlResponse(htmlFormat(ultSort("", 50)));
