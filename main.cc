@@ -187,8 +187,10 @@ string ultSort(string searchTarget, size_t loopEnd) {
       return a.fileName < b.fileName;
     });
   }
+
+  // TODO this was casueing an std::bad_alloc keep an eye out
   // EX bi-function compatable
-  for (size_t i = 0; i < loopEnd; i++) {
+  for (size_t i = 0; i < loopEnd && i < files.size(); i++) {
     htmlReturn += creatRow(files[i]);
   }
   return htmlReturn;
@@ -323,7 +325,7 @@ void handle(const TcpConnection &conn) {
     exit(1);
   }
   if (req->RequestUri().substr(0, 7) == "/search") {
-    resp.SendHtmlResponse(htmlFormat(ultSort(req->RequestUri(), 100)));
+    resp.SendHtmlResponse(htmlFormat(ultSort(req->RequestUri(), 10)));
   } else if (req->RequestUri() == "/recent") {
     // EX reason for the blank string is further explained in the func ultSort
     resp.SendHtmlResponse(htmlFormat(ultSort("", 50)));
