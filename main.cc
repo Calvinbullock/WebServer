@@ -41,12 +41,12 @@ struct FileSort {
 
 string FilePath(const string &path) { return homeFilePath + path; }
 
-// EX creats the html page
+// EX creats the html page that is sent to the conected device
 string htmlFormat(string tableRows) {
   return HTML_HEAD + tableRows + HTML_TAIL;
 }
 
-// EX converts a string to lower case
+// EX converts all char's in a string to lower case
 string toLower(string str) {
   for (size_t i = 0; i < str.length(); i++) {
     str[i] = (char)tolower(str[i]);
@@ -74,7 +74,6 @@ unsigned long directorySize(string path) {
   // EX checks if directery is open
   if ((dir = opendir(path.c_str())) == NULL) {
     perror("");
-    // TODO this might need to change
     return byteSize;
   }
 
@@ -137,7 +136,8 @@ string creatRow(FileSort file) {
   return "<tr>" + row[0] + row[1] + row[2] + row[3] + "</tr>\n";
 }
 
-// EX creats and fills the vector that holds the table rows html
+/* EX creats a vector then fills it with html strings that make rows for the
+ table */
 vector<FileSort> getFileDirectory(string path) {
   vector<FileSort> webContent;
   string filepath = FilePath(path);
@@ -150,11 +150,11 @@ vector<FileSort> getFileDirectory(string path) {
     return webContent;
   }
 
-  /* EX print all the files and directories within directory */
+  // EX print all the files and directories within directory
   int i = 0;
   while ((ent = readdir(dir)) != NULL) {
-    string fileName = string(ent->d_name); // what is this
-    // LOG_DEBUG("directory entry: %s", ent->d_name);
+    // TODO lable what "fileName" is
+    string fileName = string(ent->d_name);
     webContent.push_back(FileSort{path, fileName});
     i++;
   }
@@ -194,8 +194,9 @@ void recursiveIndex(string searchTarget, string path,
   closedir(dir);
 }
 
-// EX if you want to go sown recent SearchTaget needs to be ""
-// EX a combanation of everyFileSort() & fileSearchSort()
+// EX if you want to use recent, SearchTaget needs to be ""
+/* EX this recursise trought every directer to eather find the most recently
+ * changed file or the file that has search target in it */
 string ultSort(string searchTarget, size_t loopEnd) {
   string htmlReturn;
   vector<FileSort> files;
@@ -219,14 +220,13 @@ string ultSort(string searchTarget, size_t loopEnd) {
   }
 
   // TODO this was casueing an std::bad_alloc keep an eye out
-  // EX bi-function compatable
   for (size_t i = 0; i < loopEnd && i < files.size(); i++) {
     htmlReturn += creatRow(files[i]);
   }
   return htmlReturn;
 }
 
-// TODO mearge with other sort Method mabey
+// TODO mearge with ultSort() mabey
 // EX sorts the vector indexes that hold the rows & formats for HTML table
 string webContentSort(string path) {
   vector<FileSort> webContent = getFileDirectory(path);
@@ -245,7 +245,7 @@ string webContentSort(string path) {
          return a.fileName < b.fileName;
        });
   for (size_t i = 0; i < webContent.size(); i++) {
-    // TODO should this "if" move to vec creation to eliminate to itterations?
+    // EX this "if" pulls out the directery traversive links
     if (webContent[i].fileName == "." || webContent[i].fileName == "..") {
       webContent.erase(webContent.begin() + (long)i);
     } else {
@@ -300,7 +300,7 @@ void serveFile(const HttpRequest *req, HttpResponse *resp, const string &type) {
   ssize_t file_size = lseek(fd, 0, SEEK_END);
   ssize_t err = lseek(fd, 0, SEEK_SET);
 
-  // EX debug for lseek
+  // EX "cout" is debug for lseek
   cout << file_size << ": " << err << ": " << endl;
   // TODO finish the stuff below
   /*size_t start, end;
@@ -324,6 +324,7 @@ string getMimeType(string path) {
   string mp4 = ".mp4";
   string css = ".css";
 
+  // EX based on file type sends the corasponding mime type
   if (path.find(img) != std::string::npos) {
     return "image/jpg";
   } else if (path.find(html) != std::string::npos) {
@@ -350,7 +351,7 @@ void handle(const TcpConnection &conn) {
            req->RequestUri().c_str());
 
   HttpResponse resp(conn.fd, send);
-  // TODO helps with handling brkn requets unfin
+  // TODO helps with handling brkn requets [unfin]
   if (req->RequestUri() == "/stop") {
     exit(1);
   }
@@ -369,7 +370,6 @@ void handle(const TcpConnection &conn) {
   }
 }
 
-#if 1
 int main(int argc, char *argv[]) {
   int port = 8000;
   if (argc > 1) {
@@ -383,18 +383,3 @@ int main(int argc, char *argv[]) {
   server.Run((uint16_t)port, 20);
   return 0;
 }
-
-#elif 0
-
-// testing stuff
-bool test(const TcpConnection &conn) {
-  // test
-  return true;
-}
-
-int main(int argc, char *argv[]) {
-  // test(byteRange(), 2);
-  cout << fileSearchSort("/search/bug") << endl;
-}
-
-#endif
