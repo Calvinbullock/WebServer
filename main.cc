@@ -66,6 +66,34 @@ string formatFileSize(unsigned long size) {
   return to_string((int)size) + " " + units[unit];
 }
 
+// EX will recursively find the size of directerys
+unsigned long directorySize(string path) {
+  DIR *dir;
+  struct dirent *ent;
+  unsigned long byteSize = 0;
+  // EX checks if directery is open
+  if ((dir = opendir(path.c_str())) == NULL) {
+    perror("");
+    // TODO this might need to change
+    return byteSize;
+  }
+
+  while ((ent = readdir(dir)) != NULL) {
+    string fileName = string(ent->d_name);
+    string pathy = path + "/" + fileName;
+    if (fs::is_directory(pathy)) {
+      if ((fileName != ".") && (fileName != "..")) {
+        byteSize += directorySize(pathy);
+      }
+    } else {
+      fs::path p = FilePath(pathy);
+      byteSize += fs::file_size(pathy);
+    }
+  }
+  closedir(dir);
+  return byteSize;
+}
+
 // TODO needs the last time a file was accsesed
 // EX returns the elements of a table row
 string creatRow(FileSort file) {
@@ -78,6 +106,7 @@ string creatRow(FileSort file) {
   char timeB[80];
   strftime(timeB, 80, "%b/%d/%y", std::localtime(&cftime));
 
+  // EX finds the file icon
   string icon;
   if ((filepath).find(".m4v") != std::string::npos ||
       (filepath).find(".mp4") != std::string::npos) {
@@ -93,7 +122,8 @@ string creatRow(FileSort file) {
         R"(<td class="icon"><img src="/assets/folder_icon_edit.png" alt="[DNE]" width="20"></td>)";
     row[1] = "<td class=\"filename\" ><a href = \"" + file.getLink() + "/\">" +
              file.fileName + "</a></td>";
-    row[2] = "<td class=\"filesize\" >0 B</td>"; // TODO get dur size func here
+    row[2] = "<td class=\"filesize\" > " +
+             formatFileSize(directorySize(filepath)) + " </td>";
     row[3] = "<td class=\"lastmodified\">--</td>";
   } else {
     row[0] =
@@ -132,8 +162,8 @@ vector<FileSort> getFileDirectory(string path) {
   return webContent;
 }
 
-/* EX recurses trough each directery and adds every file to a vec send target a
- * blank string to just get every file and its size*/
+/* EX recurses trough each directery and adds every file to a vec send
+ * target a blank string to just get every file and its size*/
 void recursiveIndex(string searchTarget, string path,
                     vector<FileSort> *fileIndex) {
   path += "/";
