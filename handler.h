@@ -2,6 +2,7 @@
 #define CALVIN_HANDLER_H_
 
 #include <memory>
+#include <regex>
 #include <string>
 #include <vector>
 
@@ -20,6 +21,16 @@ struct UriInfo {
 };
 
 void parseRequestUri(const std::string &uri, UriInfo *uri_info);
+
+struct FileSort {
+  std::string path;
+  std::string fileName;
+  std::chrono::nanoseconds date_created;
+
+  std::string getLink() { return path + fileName; }
+};
+std::vector<FileSort> listFiles(const std::string &path, bool recursive,
+                                const std::regex *re);
 
 void handle(const TcpConnection &conn);
 
