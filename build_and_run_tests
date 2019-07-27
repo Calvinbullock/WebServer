@@ -6,3 +6,11 @@ g++ http.cc http_test.cc \
     -L$HOME/lib/ -lgtest -lgtest_main -lpthread -I$HOME/include/ \
     -o tests/http_test
 ./tests/http_test
+
+g++ server.cc http.cc handler.cc handler_test.cc \
+    -std=c++14 -Wall -Werror -Wshadow -Wconversion \
+    -L$HOME/lib/ -lgtest -lgtest_main -lpthread -lstdc++fs -I$HOME/include/ \
+    -o tests/handler_test
+./tests/handler_test
+
+    #-g -pthread http.cc server.cc handler.cc main.cc -lstdc++fs -o testServer
