@@ -16,10 +16,10 @@ std::string getMimeType(std::string path);
 struct UriInfo {
   std::string path;
   std::string search_param;
-  bool recent;
+  bool recent = false;
 };
 
-bool parseRequestUri(const std::string &uri, UriInfo *uri_info);
+void parseRequestUri(const std::string &uri, UriInfo *uri_info);
 
 void handle(const TcpConnection &conn);
 

@@ -13,4 +13,4 @@ g++ server.cc http.cc handler.cc handler_test.cc \
     -o tests/handler_test
 ./tests/handler_test
 
-    #-g -pthread http.cc server.cc handler.cc main.cc -lstdc++fs -o testServer
+true "########  Test Complete  ######## true"

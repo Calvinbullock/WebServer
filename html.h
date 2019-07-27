@@ -16,8 +16,8 @@ const std::string HTML_HEAD = R"RAW(<!DOCTYPE html>
     <p>
       <h2><a href="/">Movie Index</a></h2>
 
-      <form class="mid" action="/search">
-        Search: <input type="text" name="x"><br>
+      <form class="mid" action="/">
+        Search: <input type="text" name="search"><br>
       </form>
 
       <table>
@@ -44,7 +44,7 @@ const std::string HTML_TAIL = R"RAW(
           </tr>
           <tr>
             <td class="icon"><img src="/assets/folder_icon_edit.png" alt="[DNE]" width="20"></td>
-            <td class="filename"><a id="one" href="/recent">Recently_Added</a><br></td>
+            <td class="filename"><a id="one" href="/?recent">Recently_Added</a><br></td>
             <td class="filesize">--</td>
             <td class="lastmodified">--</td>
           </tr>
@@ -54,7 +54,7 @@ const std::string HTML_TAIL = R"RAW(
           </td>
         </tr>
       </table>
-      <div class="low">v0.9</div>
+      <div class="low">v0.11</div>
     </p>
   </body>
 

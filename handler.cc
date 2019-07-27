@@ -15,6 +15,7 @@
 #include <regex>
 #include <vector>
 
+#include "handler.h"
 #include "html.h"
 #include "http.h"
 #include "log.h"
@@ -65,6 +66,28 @@ string formatFileSize(unsigned long size) {
     ++unit;
   }
   return to_string((int)size) + " " + units[unit];
+}
+
+// fills in the set of UriInfo fields for the particular request
+void parseRequestUri(const std::string &uri, UriInfo *uri_info) {
+  size_t start_pos;
+  string param = "?search=";
+
+  if ((start_pos = uri.find(param)) != string::npos) {
+    uri_info->search_param = uri.substr(start_pos + param.length());
+    uri_info->path = uri.substr(0, start_pos);
+    return;
+  }
+
+  param = "?recent";
+  if ((start_pos = uri.find(param)) != string::npos) {
+    uri_info->path = uri.substr(0, start_pos);
+    uri_info->recent = true;
+    return;
+  }
+
+  uri_info->path = uri;
+  return;
 }
 
 // EX will recursively find the size of directerys
@@ -201,11 +224,6 @@ void recursiveIndex(string searchTarget, string path,
 string ultSort(string searchTarget, size_t loopEnd) {
   string htmlReturn;
   vector<FileSort> files;
-  // EX 10 as that is the min the substring needs
-  if (searchTarget.length() > 10) {
-    // EX the 10 came from the keyword "/search" and html gook "?x="
-    searchTarget = searchTarget.substr(10, searchTarget.length() - 6);
-  }
   recursiveIndex(searchTarget, "", &files);
 
   // EX "if" for recent "else" for search
@@ -351,23 +369,22 @@ void handle(const TcpConnection &conn) {
   LOG_INFO("%s request for \"%s\"", req->Method().c_str(),
            req->RequestUri().c_str());
 
+  UriInfo info;
+  parseRequestUri(req->RequestUri(), &info);
+
   HttpResponse resp(conn.fd, send);
   // TODO helps with handling brkn requets [unfin]
   if (req->RequestUri() == "/stop") {
     exit(1);
   }
-  if (req->RequestUri().substr(0, 7) == "/search") {
-    resp.SendHtmlResponse(htmlFormat(ultSort(req->RequestUri(), 10)));
-  } else if (req->RequestUri() == "/recent") {
-    // EX reason for the blank string is further explained in the func ultSort
-    resp.SendHtmlResponse(htmlFormat(ultSort("", 50)));
+  if (!info.search_param.empty() || info.recent) {
+    resp.SendHtmlResponse(htmlFormat(ultSort(info.search_param, 100)));
   } else {
-    string path = FilePath(req->RequestUri());
-    if (fs::is_directory(path)) {
-      resp.SendHtmlResponse(htmlFormat(webContentSort(req->RequestUri())));
+    if (fs::is_directory(info.path)) {
+      resp.SendHtmlResponse(htmlFormat(webContentSort(info.path)));
     } else {
-      serveFile(req.get(), &resp, getMimeType(path));
+      serveFile(req.get(), &resp, getMimeType(info.path));
     }
   }
 }
-}
+} // namespace calvin

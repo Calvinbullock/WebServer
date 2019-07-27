@@ -25,11 +25,29 @@ TEST(HandlerTest, test_formatFileSize) {
   EXPECT_EQ(formatFileSize(234102349871234983LLU), "207 PB");
 }
 
+void parseRequestTester(string uri, string path, string search, bool recent) {
+  cout << uri << endl;
+  UriInfo info;
+  parseRequestUri(uri, &info);
+  EXPECT_EQ(info.path, path);
+  EXPECT_EQ(info.search_param, search);
+  EXPECT_EQ(info.recent, recent);
+}
+
 TEST(HandlerTest, test_parseRequestUri) {
+  parseRequestTester("/?search=foo", "/", "foo", false);
+  parseRequestTester("/test/?search=foo", "/test/", "foo", false);
+
+  parseRequestTester("/?recent", "/", "", true);
+  parseRequestTester("/iuoiuo/?recent", "/iuoiuo/", "", true);
+
+  parseRequestTester("/", "/", "", false);
+  parseRequestTester("/good", "/good", "", false);
   // Should test URI like:
   // "/?search=foo"
   // "/asdf/?search=foo"
   // "/?recent
+
   // "/asdfasd/asfasdf/?recent
   // "/good.html"
   // "/good/
