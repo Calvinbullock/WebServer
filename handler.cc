@@ -28,14 +28,6 @@ namespace calvin {
 
 const string homeFilePath = ".";
 
-struct FileSort {
-  string path;
-  string fileName;
-  std::chrono::nanoseconds date_created;
-
-  string getLink() { return path + fileName; }
-};
-
 /* -------------------------------- ------- -------------------------------- **
 -- -------------------------------- Methods -------------------------------- --
 -- ------------- in a coment EX = Explanation or do not remove ------------- --
