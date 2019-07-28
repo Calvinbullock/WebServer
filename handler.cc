@@ -48,6 +48,48 @@ string toLower(string str) {
   return str;
 }
 
+/* EX recurses trough each directery and adds every file to a vec send
+ * target a blank string to just get every file and its size*/
+void listFiles(const string &path, bool recursive, const string &searchTarget,
+               vector<FileSort> *files) {
+
+  // EX regex for search
+  std::regex re(toLower(searchTarget));
+  struct dirent *ent;
+  DIR *dir;
+
+  if ((dir = opendir(FilePath(path).c_str())) == NULL) {
+    perror("");
+    return;
+  }
+
+  while ((ent = readdir(dir)) != NULL) {
+    FileSort fs;
+    fs.fileName = string(ent->d_name); // TODO lable what "fileName" is
+    fs::path p = FilePath(path + fs.fileName);
+    fs.date_created = fs::last_write_time(p).time_since_epoch();
+    fs.path = path;
+
+    // EX "if" checks for the "." ".." so it dose not infa loop
+    if ((fs.fileName == ".") || (fs.fileName == "..")) {
+      continue;
+    }
+
+    if (fs::is_directory(p)) {
+      if (recursive) {
+        listFiles(path + fs.fileName + "/", recursive, searchTarget, files);
+      } else {
+        fs.isDirectory = true;
+        files->push_back(fs);
+      }
+    } else if (regex_search(toLower(path + fs.fileName), re)) {
+      fs.fileSize = fs::file_size(p);
+      files->push_back(fs);
+    }
+  }
+  closedir(dir);
+}
+
 // EX converts bytes to needed unit
 string formatFileSize(unsigned long size) {
   int unit = 0;
@@ -84,28 +126,12 @@ void parseRequestUri(const std::string &uri, UriInfo *uri_info) {
 
 // EX will recursively find the size of directerys
 unsigned long directorySize(string path) {
-  DIR *dir;
-  struct dirent *ent;
-  unsigned long byteSize = 0;
-  // EX checks if directery is open
-  if ((dir = opendir(path.c_str())) == NULL) {
-    perror("");
-    return byteSize;
+  vector<FileSort> files;
+  listFiles(path + "/", true, "", &files);
+  size_t byteSize = 0;
+  for (auto f : files) {
+    byteSize += f.fileSize;
   }
-
-  while ((ent = readdir(dir)) != NULL) {
-    string fileName = string(ent->d_name);
-    string pathy = path + "/" + fileName;
-    if (fs::is_directory(pathy)) {
-      if ((fileName != ".") && (fileName != "..")) {
-        byteSize += directorySize(pathy);
-      }
-    } else {
-      fs::path p = FilePath(pathy);
-      byteSize += fs::file_size(pathy);
-    }
-  }
-  closedir(dir);
   return byteSize;
 }
 
@@ -138,7 +164,7 @@ string creatRow(FileSort file) {
     row[1] = "<td class=\"filename\" ><a href = \"" + file.getLink() + "/\">" +
              file.fileName + "</a></td>";
     row[2] = "<td class=\"filesize\" > " +
-             formatFileSize(directorySize(filepath)) + " </td>";
+             formatFileSize(directorySize(file.getLink())) + " </td>";
     row[3] = "<td class=\"lastmodified\">--</td>";
   } else {
     row[0] =
@@ -152,71 +178,13 @@ string creatRow(FileSort file) {
   return "<tr>" + row[0] + row[1] + row[2] + row[3] + "</tr>\n";
 }
 
-/* EX creats a vector then fills it with html strings that make rows for the
- table */
-vector<FileSort> getFileDirectory(string path) {
-  vector<FileSort> webContent;
-  string filepath = FilePath(path);
-  DIR *dir;
-  struct dirent *ent;
-
-  // EX checks if directery is open
-  if ((dir = opendir(filepath.c_str())) == NULL) {
-    perror("");
-    return webContent;
-  }
-
-  // EX print all the files and directories within directory
-  int i = 0;
-  while ((ent = readdir(dir)) != NULL) {
-    // TODO lable what "fileName" is
-    string fileName = string(ent->d_name);
-    webContent.push_back(FileSort{path, fileName});
-    i++;
-  }
-  closedir(dir);
-  return webContent;
-}
-
-/* EX recurses trough each directery and adds every file to a vec send
- * target a blank string to just get every file and its size*/
-void recursiveIndex(string searchTarget, string path,
-                    vector<FileSort> *fileIndex) {
-  path += "/";
-  DIR *dir;
-  // EX regex for search
-  std::regex e(toLower(searchTarget));
-  struct dirent *ent;
-  // EX checks if directery is open
-  if ((dir = opendir(FilePath(path).c_str())) == NULL) {
-    perror("");
-    return;
-  }
-  while ((ent = readdir(dir)) != NULL) {
-    string fileName = string(ent->d_name);
-    fs::path p = FilePath(path + fileName);
-    // EX dse is for recent files
-    auto dSE = fs::last_write_time(p).time_since_epoch();
-
-    if (fs::is_directory(FilePath(path + fileName))) {
-      // EX "if" checks for the "." ".." so it dose not infa loop
-      if ((fileName != ".") && (fileName != "..")) {
-        recursiveIndex(searchTarget, path + fileName, fileIndex);
-      }
-    } else if (regex_search(toLower(path + fileName), e)) {
-      fileIndex->push_back(FileSort{path, fileName, dSE});
-    }
-  }
-  closedir(dir);
-}
-
 // EX if you want to use recent, SearchTaget needs to be ""
 /* EX this recursise trought every directer to eather find the most recently
  * changed file or the file that has search target in it */
 string ultSort(string searchTarget, size_t loopEnd) {
   string htmlReturn;
   vector<FileSort> files;
-  recursiveIndex(searchTarget, "", &files);
+  listFiles("/", true, searchTarget, &files);
 
   // EX "if" for recent "else" for search
   if (searchTarget.length() == 0) {
@@ -240,7 +208,8 @@ string ultSort(string searchTarget, size_t loopEnd) {
 // TODO mearge with ultSort() mabey
 // EX sorts the vector indexes that hold the rows & formats for HTML table
 string webContentSort(string path) {
-  vector<FileSort> webContent = getFileDirectory(path);
+  vector<FileSort> webContent;
+  listFiles(path, false, "", &webContent);
   // EX this row is the parentDirectory Row
   string htmlReturn = R"stop(
         <tr>
@@ -372,7 +341,7 @@ void handle(const TcpConnection &conn) {
   if (!info.search_param.empty() || info.recent) {
     resp.SendHtmlResponse(htmlFormat(ultSort(info.search_param, 100)));
   } else {
-    if (fs::is_directory(info.path)) {
+    if (fs::is_directory(FilePath(info.path))) {
       resp.SendHtmlResponse(htmlFormat(webContentSort(info.path)));
     } else {
       serveFile(req.get(), &resp, getMimeType(info.path));

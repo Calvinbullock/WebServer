@@ -26,6 +26,8 @@ struct FileSort {
   std::string path;
   std::string fileName;
   std::chrono::nanoseconds date_created;
+  size_t fileSize = 0;
+  bool isDirectory = false;
 
   std::string getLink() { return path + fileName; }
 };
