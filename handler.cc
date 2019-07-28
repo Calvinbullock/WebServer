@@ -177,38 +177,42 @@ string creatRow(FileSort file) {
   return "<tr>" + row[0] + row[1] + row[2] + row[3] + "</tr>\n";
 }
 
-// EX if you want to use recent, SearchTaget needs to be ""
-/* EX this recursise trought every directer to eather find the most recently
- * changed file or the file that has search target in it */
-string ultSort(string searchTarget, size_t loopEnd) {
-  string htmlReturn;
-  vector<FileSort> files;
-  listFiles("/", true, searchTarget, &files);
-
-  // EX "if" for recent "else" for search
-  if (searchTarget.length() == 0) {
-    sort(files.begin(), files.end(), [](const FileSort &a, const FileSort &b) {
-      return a.date_created > b.date_created;
-    });
-
-  } else {
+string sortAndFormatFileList(vector<FileSort> files, bool sortByFilename,
+                             size_t maxResults) {
+  if (sortByFilename) {
     sort(files.begin(), files.end(), [](const FileSort &a, const FileSort &b) {
       return a.fileName < b.fileName;
     });
+  } else {
+    sort(files.begin(), files.end(), [](const FileSort &a, const FileSort &b) {
+      return a.date_created > b.date_created;
+    });
   }
 
-  // TODO this was casueing an std::bad_alloc keep an eye out
-  for (size_t i = 0; i < loopEnd && i < files.size(); i++) {
+  string htmlReturn;
+  for (size_t i = 0; i < maxResults && i < files.size(); i++) {
     htmlReturn += creatRow(files[i]);
   }
   return htmlReturn;
 }
 
+// EX if you want to use recent, SearchTaget needs to be ""
+/* EX this recursise trought every directer to eather find the most recently
+ * changed file or the file that has search target in it */
+string listFilesHtml(string searchTarget, size_t maxResults) {
+  vector<FileSort> files;
+  listFiles("/", true, searchTarget, &files);
+
+  // EX "if" for recent "else" for search
+  return sortAndFormatFileList(files, !searchTarget.empty(), maxResults);
+}
+
 // TODO mearge with ultSort() mabey
 // EX sorts the vector indexes that hold the rows & formats for HTML table
-string webContentSort(string path) {
-  vector<FileSort> webContent;
-  listFiles(path, false, "", &webContent);
+string listDirectoryHtml(string path) {
+  vector<FileSort> files;
+  listFiles(path, false, "", &files);
+
   // EX this row is the parentDirectory Row
   string htmlReturn = R"stop(
         <tr>
@@ -219,19 +223,7 @@ string webContentSort(string path) {
         </tr>
       )stop";
 
-  sort(webContent.begin(), webContent.end(),
-       [](const FileSort &a, const FileSort &b) {
-         return a.fileName < b.fileName;
-       });
-  for (size_t i = 0; i < webContent.size(); i++) {
-    // EX this "if" pulls out the directery traversive links
-    if (webContent[i].fileName == "." || webContent[i].fileName == "..") {
-      webContent.erase(webContent.begin() + (long)i);
-    } else {
-      htmlReturn += creatRow(webContent[i]);
-    }
-  }
-  return htmlReturn;
+  return htmlReturn + sortAndFormatFileList(files, true, files.size());
 }
 
 // TODO finish this func
@@ -338,10 +330,10 @@ void handle(const TcpConnection &conn) {
     exit(1);
   }
   if (!info.search_param.empty() || info.recent) {
-    resp.SendHtmlResponse(htmlFormat(ultSort(info.search_param, 100)));
+    resp.SendHtmlResponse(htmlFormat(listFilesHtml(info.search_param, 100)));
   } else {
     if (filesystem::is_directory(FilePath(info.path))) {
-      resp.SendHtmlResponse(htmlFormat(webContentSort(info.path)));
+      resp.SendHtmlResponse(htmlFormat(listDirectoryHtml(info.path)));
     } else {
       serveFile(req.get(), &resp, getMimeType(info.path));
     }
