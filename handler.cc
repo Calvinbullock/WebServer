@@ -35,7 +35,7 @@ const string homeFilePath = ".";
 string FilePath(const string &path) { return homeFilePath + path; }
 
 // EX creats the html page that is sent to the conected device
-string htmlFormat(string tableRows) {
+string htmlFormat(const string &tableRows) {
   return HTML_HEAD + tableRows + HTML_TAIL;
 }
 
@@ -49,7 +49,7 @@ string toLower(string str) {
 
 // TODO posibly move to its own file
 // EX this passes the file type to serveIndexHtml()
-string getMimeType(string path) {
+string getMimeType(const string &path) {
   string img = ".jpg";
   string m4v = ".m4v";
   string html = ".html";
@@ -73,7 +73,7 @@ string getMimeType(string path) {
 }
 
 // EX converts bytes to needed unit
-string formatFileSize(unsigned long size) {
+string formatFileSize(size_t size) {
   int unit = 0;
   string units[] = {"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
 
@@ -150,7 +150,7 @@ void listFiles(const string &path, bool recursive, const string &searchTarget,
 
 // EX keep with listFiles
 // EX will recursively find the size of directerys
-unsigned long directorySize(string path) {
+size_t directorySize(const string &path) {
   vector<FileSort> files;
   listFiles(path + "/", true, "", &files);
   size_t byteSize = 0;
@@ -162,7 +162,7 @@ unsigned long directorySize(string path) {
 
 // TODO needs the last time a file was accsesed
 // EX returns the elements of a table row
-string creatRow(FileSort file) {
+string creatRow(const FileSort &file) {
   string row[5];
   string filepath = FilePath(file.getLink());
   // Date creates is in nanoseconds, convert to seconds.
@@ -224,7 +224,7 @@ string sortAndFormatFileList(vector<FileSort> files, bool sortByFilename,
 // EX if you want to use recent, SearchTaget needs to be ""
 /* EX this recursise trought every directer to eather find the most recently
  * changed file or the file that has search target in it */
-string listFilesHtml(string searchTarget, size_t maxResults) {
+string listFilesHtml(const string &searchTarget, size_t maxResults) {
   vector<FileSort> files;
   listFiles("/", true, searchTarget, &files);
 

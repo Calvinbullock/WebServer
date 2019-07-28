@@ -12,7 +12,7 @@ namespace calvin {
 
 std::string toLower(std::string str);
 std::string formatFileSize(size_t size);
-std::string getMimeType(std::string path);
+std::string getMimeType(const std::string &path);
 
 struct UriInfo {
   std::string path;
@@ -29,7 +29,7 @@ struct FileSort {
   size_t fileSize = 0;
   bool isDirectory = false;
 
-  std::string getLink() { return path + fileName; }
+  std::string getLink() const { return path + fileName; }
 };
 std::vector<FileSort> listFiles(const std::string &path, bool recursive,
                                 const std::regex *re);
