@@ -334,8 +334,14 @@ void handle(const TcpConnection &conn) {
     resp.SendHtmlResponse(htmlFormat(listFilesHtml(info.search_param, 100)));
   } else {
     if (filesystem::is_directory(FilePath(info.path))) {
-      resp.SendHtmlResponse(htmlFormat(listDirectoryHtml(info.path)));
+      cout << "is dir " << info.path << endl;
+      if (info.path[info.path.size() - 1] == '/') {
+        resp.SendHtmlResponse(htmlFormat(listDirectoryHtml(info.path)));
+      } else {
+        // redirect(); not a valid function
+      }
     } else {
+      cout << "is file " << info.path << endl;
       serveFile(req.get(), &resp, getMimeType(info.path));
     }
   }
