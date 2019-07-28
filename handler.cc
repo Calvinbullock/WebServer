@@ -297,7 +297,7 @@ void serveFile(const HttpRequest *req, HttpResponse *resp, const string &type) {
   ssize_t err = lseek(fd, 0, SEEK_SET);
 
   // EX "cout" is debug for lseek
-  cout << file_size << ": " << err << ": " << endl;
+  cout << "aprox L.300 lseek, " << file_size << ": " << err << ": " << endl;
   // TODO finish the stuff below
   /*size_t start, end;
   if (byteRange(req->Headers(), &start, &end)) {
