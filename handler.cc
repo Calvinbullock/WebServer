@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <experimental/filesystem>
-#include <fstream>
 #include <iostream>
 #include <locale>
 #include <memory>
@@ -21,8 +20,8 @@
 #include "log.h"
 #include "server.h"
 
-namespace filesystem = std::experimental::filesystem;
 using namespace std;
+namespace filesystem = std::experimental::filesystem;
 
 namespace calvin {
 
@@ -46,6 +45,65 @@ string toLower(string str) {
     str[i] = (char)tolower(str[i]);
   }
   return str;
+}
+
+// TODO posibly move to its own file
+// EX this passes the file type to serveIndexHtml()
+string getMimeType(string path) {
+  string img = ".jpg";
+  string m4v = ".m4v";
+  string html = ".html";
+  string mp4 = ".mp4";
+  string css = ".css";
+
+  // EX based on file type sends the corasponding mime type
+  if (path.find(img) != std::string::npos) {
+    return "image/jpg";
+  } else if (path.find(html) != std::string::npos) {
+    return "text/html";
+  } else if (path.find(css) != std::string::npos) {
+    return "text/css";
+  } else if (path.find(m4v) != std::string::npos) {
+    return "video/x-m4v";
+  } else if (path.find(mp4) != std::string::npos) {
+    return "video/mp4";
+  }
+
+  return "text/plain";
+}
+
+// EX converts bytes to needed unit
+string formatFileSize(unsigned long size) {
+  int unit = 0;
+  string units[] = {"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
+
+  while (size >= 1024) {
+    size /= 1024;
+    ++unit;
+  }
+  return to_string((int)size) + " " + units[unit];
+}
+
+// fills in the set of UriInfo fields for the particular request
+void parseRequestUri(const std::string &uri, UriInfo *uri_info) {
+  size_t start_pos;
+  string param = "?search=";
+
+  if ((start_pos = uri.find(param)) != string::npos) {
+    uri_info->search_param = uri.substr(start_pos + param.length());
+    uri_info->path = uri.substr(0, start_pos);
+    return;
+  }
+
+  param = "?recent";
+  if ((start_pos = uri.find(param)) != string::npos) {
+    uri_info->path = uri.substr(0, start_pos);
+    uri_info->recent = true;
+    return;
+  }
+
+  uri_info->path = uri;
+  return;
 }
 
 /* EX recurses trough each directery and adds every file to a vec send
@@ -90,40 +148,7 @@ void listFiles(const string &path, bool recursive, const string &searchTarget,
   closedir(dir);
 }
 
-// EX converts bytes to needed unit
-string formatFileSize(unsigned long size) {
-  int unit = 0;
-  string units[] = {"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
-
-  while (size >= 1024) {
-    size /= 1024;
-    ++unit;
-  }
-  return to_string((int)size) + " " + units[unit];
-}
-
-// fills in the set of UriInfo fields for the particular request
-void parseRequestUri(const std::string &uri, UriInfo *uri_info) {
-  size_t start_pos;
-  string param = "?search=";
-
-  if ((start_pos = uri.find(param)) != string::npos) {
-    uri_info->search_param = uri.substr(start_pos + param.length());
-    uri_info->path = uri.substr(0, start_pos);
-    return;
-  }
-
-  param = "?recent";
-  if ((start_pos = uri.find(param)) != string::npos) {
-    uri_info->path = uri.substr(0, start_pos);
-    uri_info->recent = true;
-    return;
-  }
-
-  uri_info->path = uri;
-  return;
-}
-
+// EX keep with listFiles
 // EX will recursively find the size of directerys
 unsigned long directorySize(string path) {
   vector<FileSort> files;
@@ -285,30 +310,6 @@ void serveFile(const HttpRequest *req, HttpResponse *resp, const string &type) {
   } else {*/
   resp->SendResponse(type, fd, (size_t)file_size);
   close(fd);
-}
-
-// EX this passes the file type to serveIndexHtml()
-string getMimeType(string path) {
-  string img = ".jpg";
-  string m4v = ".m4v";
-  string html = ".html";
-  string mp4 = ".mp4";
-  string css = ".css";
-
-  // EX based on file type sends the corasponding mime type
-  if (path.find(img) != std::string::npos) {
-    return "image/jpg";
-  } else if (path.find(html) != std::string::npos) {
-    return "text/html";
-  } else if (path.find(css) != std::string::npos) {
-    return "text/css";
-  } else if (path.find(m4v) != std::string::npos) {
-    return "video/x-m4v";
-  } else if (path.find(mp4) != std::string::npos) {
-    return "video/mp4";
-  }
-
-  return "text/plain";
 }
 
 // EX The function we want to make the thread run.
