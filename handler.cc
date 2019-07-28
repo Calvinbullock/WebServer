@@ -21,7 +21,7 @@
 #include "log.h"
 #include "server.h"
 
-namespace fs = std::experimental::filesystem;
+namespace filesystem = std::experimental::filesystem;
 using namespace std;
 
 namespace calvin {
@@ -66,8 +66,8 @@ void listFiles(const string &path, bool recursive, const string &searchTarget,
   while ((ent = readdir(dir)) != NULL) {
     FileSort fs;
     fs.fileName = string(ent->d_name); // TODO lable what "fileName" is
-    fs::path p = FilePath(path + fs.fileName);
-    fs.date_created = fs::last_write_time(p).time_since_epoch();
+    filesystem::path p = FilePath(path + fs.fileName);
+    fs.date_created = filesystem::last_write_time(p).time_since_epoch();
     fs.path = path;
 
     // EX "if" checks for the "." ".." so it dose not infa loop
@@ -75,7 +75,7 @@ void listFiles(const string &path, bool recursive, const string &searchTarget,
       continue;
     }
 
-    if (fs::is_directory(p)) {
+    if (filesystem::is_directory(p)) {
       if (recursive) {
         listFiles(path + fs.fileName + "/", recursive, searchTarget, files);
       } else {
@@ -83,7 +83,7 @@ void listFiles(const string &path, bool recursive, const string &searchTarget,
         files->push_back(fs);
       }
     } else if (regex_search(toLower(path + fs.fileName), re)) {
-      fs.fileSize = fs::file_size(p);
+      fs.fileSize = filesystem::file_size(p);
       files->push_back(fs);
     }
   }
@@ -140,10 +140,8 @@ unsigned long directorySize(string path) {
 string creatRow(FileSort file) {
   string row[5];
   string filepath = FilePath(file.getLink());
-  fs::path p = filepath;
-  auto ftime = fs::last_write_time(p);
-  // EX assuming system_clock
-  std::time_t cftime = decltype(ftime)::clock::to_time_t(ftime);
+  // Date creates is in nanoseconds, convert to seconds.
+  std::time_t cftime = file.date_created.count() / 1000000000;
   char timeB[80];
   strftime(timeB, 80, "%b/%d/%y", std::localtime(&cftime));
 
@@ -158,13 +156,14 @@ string creatRow(FileSort file) {
     icon = "<img src=\"/assets/file_icon_edit.png\" ";
   }
 
-  if (fs::is_directory(filepath)) {
+  if (file.isDirectory) {
     row[0] =
         R"(<td class="icon"><img src="/assets/folder_icon_edit.png" alt="[DNE]" width="20"></td>)";
     row[1] = "<td class=\"filename\" ><a href = \"" + file.getLink() + "/\">" +
              file.fileName + "</a></td>";
     row[2] = "<td class=\"filesize\" > " +
-             formatFileSize(directorySize(file.getLink())) + " </td>";
+             formatFileSize(directorySize(file.getLink())) +
+             " </td>"; // TODO clean up this filesystem bit
     row[3] = "<td class=\"lastmodified\">--</td>";
   } else {
     row[0] =
@@ -172,7 +171,7 @@ string creatRow(FileSort file) {
     row[1] = "<td class=\"filename\" ><a href = \"" + file.getLink() + "\">" +
              file.fileName + "</a></td>";
     row[2] =
-        "<td class=\"filesize\" >" + formatFileSize(fs::file_size(p)) + "</td>";
+        "<td class=\"filesize\" >" + formatFileSize(file.fileSize) + "</td>";
     row[3] = "<td class=\"lastmodified\">" + string(timeB) + "</td>";
   }
   return "<tr>" + row[0] + row[1] + row[2] + row[3] + "</tr>\n";
@@ -341,7 +340,7 @@ void handle(const TcpConnection &conn) {
   if (!info.search_param.empty() || info.recent) {
     resp.SendHtmlResponse(htmlFormat(ultSort(info.search_param, 100)));
   } else {
-    if (fs::is_directory(FilePath(info.path))) {
+    if (filesystem::is_directory(FilePath(info.path))) {
       resp.SendHtmlResponse(htmlFormat(webContentSort(info.path)));
     } else {
       serveFile(req.get(), &resp, getMimeType(info.path));

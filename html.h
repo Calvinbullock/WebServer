@@ -54,7 +54,7 @@ const std::string HTML_TAIL = R"RAW(
           </td>
         </tr>
       </table>
-      <div class="low">v0.11</div>
+      <div class="low">v0.12</div>
     </p>
   </body>
 
